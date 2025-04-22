@@ -1,23 +1,18 @@
 // backend/server.js
-require('dotenv').config();
 const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 const port = process.env.PORT || 3001;
 const Recipe = require('./models/Recipe');
 
-// Sample hardcoded data (replace with DB call later)
-const sampleRecipes = [
-    { id: 1, title: "Μακαρόνια με Κιμά", description: "Κλασική συνταγή..."},
-    { id: 2, title: "Φακές Σούπα", description: "Θρεπτική και εύκολη..."},
-    { id: 3, title: "Κοτόπουλο στο Φούρνο", description: "Με πατάτες..."}
-];
+require('dotenv').config();
 
 const connectDB = async () => {
     try {
         const conn = await mongoose.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+            
         });
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
@@ -28,6 +23,37 @@ const connectDB = async () => {
 
 connectDB();
 
+
+
+app.post('/api/recipes', async (req, res) => {
+    try {
+        const { title, description, ingredients, steps } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ message: 'Title is required' });
+        }
+
+        const newRecipe = new Recipe({
+            title,
+            description,
+            ingredients,
+            steps,
+            // userID
+        });
+
+        const savedRecipe = await newRecipe.save();
+
+        res.status(201).json(savedRecipe);
+
+    } catch (error) {
+        console.error('Error creating recipe:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ message: 'Validation Error', errors: error.errors });
+        }
+        res.status(500).json({ message: 'Server Error: Could not create recipe' });
+    }
+});
+
 // API endpoint to get all recipes
 app.get('/api/recipes', async (req, res) => {
     try {
@@ -35,7 +61,30 @@ app.get('/api/recipes', async (req, res) => {
         res.json(recipes);
     } catch (error) {
         console.error('Error fetching recipes from DB:', error);
-        res.status(500).json({ message: 'Server Error: Unable to fetch recipes' });
+        res.status(500).json({ message: 'Server Error: Could not fetch recipes' });
+    }
+});
+
+app.get('/api/recipes/:id', async (req, res) => {
+    try {
+        const recipeId = req.params.id;
+
+
+        if (!mongoose.Types.ObjectId.isValid(recipeId)) {
+            return res.status(400).json({ message: 'Invalid Recipe ID format' });
+        }
+
+        const recipe = await Recipe.findById(recipeId);
+
+        if (!recipe) {
+            return res.status(404).json({ message: 'Recipe not found' });
+        }
+
+        res.json(recipe);
+        
+    } catch (error) {
+        console.error('Error fetching single recipe:', error);
+        res.status(500).json({ message: 'Server Error: Could not fetch recipe' });
     }
 });
 

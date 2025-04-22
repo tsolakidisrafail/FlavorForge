@@ -9,7 +9,6 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001', // Backend server URL
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '') // Προαιρετικό: αν θέλουμε να αφαιρέσουμε το /api από το URL
       }
     }
   }

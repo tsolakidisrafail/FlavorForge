@@ -1,5 +1,6 @@
 // frontend/src/components/RecipeList.jsx
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 function RecipeList() {
   const [recipes, setRecipes] = useState([]);
@@ -40,9 +41,11 @@ function RecipeList() {
         {recipes.length > 0 ? (
             <ul>
                 {recipes.map(recipe => (
-                    <li key={recipe.id}>
+                    <li key={recipe._id}>
+                      <Link to={`/recipes/${recipe._id}`}>
                         <h3>{recipe.title}</h3>
-                        <p>{recipe.description}</p>
+                      </Link>
+                      <p>{recipe.description}</p>
                     </li>
                 ))}
             </ul>
