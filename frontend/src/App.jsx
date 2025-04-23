@@ -1,13 +1,21 @@
 // frontend/src/App.jsx
 import React, { useContext } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link as RouterLink, useNavigate } from 'react-router-dom';
 import AuthContext from './context/AuthContext';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Box from '@mui/material/Box';
 import RecipeList from './components/RecipeList';
 import RecipeForm from './components/RecipeForm';
 import RecipeDetail from './components/RecipeDetail';
-import './App.css';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
+import ProtectedRoute from './components/ProtectedRoute';
+import RecipeEditForm from './components/RecipeEditForm';
+import './App.css';
 
 function App() {
   const authContextValue = useContext(AuthContext);
@@ -26,34 +34,61 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1><Link to="/">FlavorForge</Link></h1>
-        <nav>
-          <Link to="/add-recipe">Προσθήκη Συνταγής</Link> |
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+       <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            <RouterLink to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+              FlavorForge 🍳
+            </RouterLink>
+          </Typography>
+
+          <Button color="inherit" component={RouterLink} to="/add-recipe">
+            Προσθήκη Συνταγής
+          </Button>
           {user ? (
             <>
-              <span>Καλώς ήρθες, {user.name}!</span> |
-              <button onClick={handleLogout}>Αποσύνδεση</button>
+              <Typography sx={{ mx: 2 }}>
+                Καλώς ήρθες, {user.name}!
+              </Typography>
+              <Button color="inherit" onClick={handleLogout}>
+                Αποσύνδεση
+              </Button>
             </>
           ) : (
             <>
-            <Link to="/register">Εγγραφή</Link> |
-            <Link to="/login">Σύνδεση</Link>
+              <Button color="inherit" component={RouterLink} to="/register">
+                Εγγραφή
+              </Button>
+              <Button color="inherit" component={RouterLink} to="/login">
+                Σύνδεση
+              </Button>
             </>
           )}
-        </nav>
-      </header>
-      <main>
+        </Toolbar>
+      </AppBar>
+
+      <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
         <Routes>
           <Route path="/" element={<RecipeList />} />
-          <Route path="/add-recipe" element={<RecipeForm />} />
-          <Route path="/recipes/:id" element={<RecipeDetail />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/login" element={<LoginForm />} />
+          <Route path="/recipes/:id" element={<RecipeDetail />} />
+          <Route path="/add-recipe" element={<ProtectedRoute><RecipeForm /></ProtectedRoute>} />
+          <Route path="/recipes/:id/edit" element={<ProtectedRoute><RecipeEditForm /></ProtectedRoute>} />
         </Routes>
-      </main>
-    </div>
+      </Container>
+
+      <Box component="footer" sx={{ bgcolor: 'background.paper', p: 2, mt: 'auto' }}>
+        <Container maxWidth="lg">
+          <Typography variant="body2" color="text.secondary" align="center">
+            {'Copyright © '}
+            FlavorForge {new Date().getFullYear()}
+            {'.'}
+          </Typography>
+        </Container>
+      </Box>
+    </Box>
   );
 }
 

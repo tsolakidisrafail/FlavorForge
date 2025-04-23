@@ -1,6 +1,7 @@
 // frontend/src/components/RecipeForm.jsx
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AuthContext from '../context/AuthContext';
 
 function RecipeForm() {
     const [title, setTitle] = useState('');
@@ -9,12 +10,19 @@ function RecipeForm() {
     const [steps, setSteps] = useState('');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const { user } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        if (!user || !user.token) {
+            setError('Πρέπει να είστε συνδεδεμένοι για να προσθέσετε μια συνταγή');
+            setLoading(false);
+            return;
+        }
 
         if (!title.trim()) {
             setError('Ο τίτλος είναι υποχρεωτικός');
@@ -33,7 +41,8 @@ function RecipeForm() {
             const response = await fetch('/api/recipes', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user.token}`
                 },
                 body: JSON.stringify(newRecipeData),
             });

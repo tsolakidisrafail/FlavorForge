@@ -1,6 +1,22 @@
 // backend/models/Recipe.js
 const mongoose = require('mongoose');
 
+const reviewSchema = new mongoose.Schema(
+    {
+        name: { type: String, required: true },
+        rating: { type: Number, required: true },
+        comment: { type: String, required: true },
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+    },
+    {
+        timestamps: true,
+    }
+);
+
 const recipeSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -27,7 +43,22 @@ const recipeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
-    }
-});
+    },
+    reviews: [reviewSchema],
+    rating: {
+        type: Number,
+        default: 0,
+        required: true
+    },
+    numReviews: {
+        type: Number,
+        default: 0,
+        required: true
+    },
+},
+{
+    timestamps: true,
+}
+);
 
 module.exports = mongoose.model('Recipe', recipeSchema);

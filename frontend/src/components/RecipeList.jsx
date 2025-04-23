@@ -1,16 +1,47 @@
 // frontend/src/components/RecipeList.jsx
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import Grid from '@mui/material/Grid';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActions from '@mui/material/CardActions';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 
 function RecipeList() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
   useEffect(() => {
-    // Fetch data from the backend API
-    fetch('/api/recipes')
-      .then((response) => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Adjust the debounce delay as needed
+
+    return () => {
+      clearTimeout(timerId);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    let apiUrl = '/api/recipes';
+    if (debouncedSearchTerm.trim()) {
+      apiUrl += `?search=${encodeURIComponent(debouncedSearchTerm.trim())}`;
+    }
+
+    console.log(`Fetching recipes from (debounced): ${apiUrl}`);
+
+    fetch(apiUrl)
+      .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -20,40 +51,79 @@ function RecipeList() {
         setRecipes(data);
         setLoading(false);
       })
-        .catch((error) => {
-            console.error('Error fetching recipes:', error);
-            setError(error.message);
-            setLoading(false);
-        });
-  }, []);
+      .catch(error => {
+        console.error('Error fetching recipes:', error);
+        setError(error.message);
+        setLoading(false);
+      });
+  }, [debouncedSearchTerm]);
+
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
 
   if (loading) {
-    return <div>Loading recipes...</div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (error) {
-    return <div>Error loading recipes: {error}</div>;
+    return <Alert severity="error" sx={{ mt: 2 }}>Error loading recipes: {error}</Alert>;
   }
 
   return (
-    <div>
-        <h2>Συνταγές</h2>
-        {recipes.length > 0 ? (
-            <ul>
-                {recipes.map(recipe => (
-                    <li key={recipe._id}>
-                      <Link to={`/recipes/${recipe._id}`}>
-                        <h3>{recipe.title}</h3>
-                      </Link>
-                      <p>{recipe.description}</p>
-                    </li>
-                ))}
-            </ul>
-        ) : (
-        <p>Δεν βρέθηκαν συνταγές.</p>
-        )}
-    </div>
-    );
-}
+    <Box sx={{ flexGrow: 1 }}>
+      <Typography variant="h4" component="h2" gutterBottom>
+        Συνταγές
+      </Typography>
 
+      <TextField
+        label="Αναζήτηση συνταγής..."
+        variant="outlined"
+        fullWidth
+        value={searchTerm}
+        onChange={handleSearchChange}
+        sx={{ mb: 4 }}
+      />
+
+      {recipes.length > 0 ? (
+        <Grid container spacing={3}>
+          {recipes.map((recipe => (
+            <Grid item xs={12} sm={6} md={4} key={recipe._id}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography gutterBottom variant="h5" component="div">
+                    {recipe.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {recipe.description?.substring(0, 100)}{recipe.description?.length > 100 ? '...' : ''}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Βαθμολογία: {recipe.rating ? recipe.rating.toFixed(1) : 'N/A'} ({recipe.numReviews || 0})
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    component={RouterLink}
+                    to={`/recipes/${recipe._id}`}
+                  >
+                    Δες Λεπτομέρειες
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          )))}
+        </Grid>
+      ) : (
+        <Typography sx={{ mt: 2}}>
+          Δεν βρέθηκαν συνταγές{searchTerm ? ` για τον όρο "${searchTerm}"` : ''}.
+        </Typography>
+      )}
+    </Box>
+  );
+}
 export default RecipeList;
