@@ -1,8 +1,23 @@
 // frontend/src/components/RecipeDetail.jsx
 import React, { useEffect, useState, useContext } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import Divider from '@mui/material/Divider';
 import Button from '@mui/material/Button';
+import Rating from '@mui/material/Rating';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Paper from '@mui/material/Paper';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import StarIcon from '@mui/icons-material/Star';
 
 function RecipeDetail() {
     const [recipe, setRecipe] = useState(null);
@@ -131,15 +146,19 @@ function RecipeDetail() {
     };
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <CircularProgress />
+            </Box>
+        );
     }
 
-    if (error) {
-        return <div>Error: {error === 'Recipe not found' ? 'Η συνταγή δεν βρέθηκε.' : error}</div>;
+    if (error && !recipe) {
+        return <Alert severity="error" sx={{ mt: 2 }}>Σφάλμα: {error === 'Recipe not found' ? 'Η συνταγή δεν βρέθηκε.' : error}</Alert>;
     }
 
     if (!recipe) {
-        return <div>Recipe data is unavailable.</div>;
+        return <Alert severity="warning" sx={{ mt: 2 }}>Δεν βρέθηκαν δεδομένα συνταγής.</Alert>;
     }
 
     console.log('Checking ownership...');
@@ -150,115 +169,169 @@ function RecipeDetail() {
     console.log('Is Owner:', isOwner);
 
     return (
-        <div>
-            <h2>{recipe.title}</h2>
-            <div>
-                Βαθμολογία: {recipe.rating ? recipe.rating.toFixed(1) : 'N/A'} / 5 ({recipe.numReviews || 0} αξιολογήσεις)
-            </div>
-            <p>{recipe.description}</p>
+        <Box sx={{ my: 2 }}>
+            <Typography variant="h4" component="h1" gutterBottom>
+                {recipe.title}
+            </Typography>
 
-            <h3>Συστατικά:</h3>
-            {recipe.ingredients && recipe.ingredients.length > 0 ? (
-                <ul>
-                    {recipe.ingredients.map((ingredient, index) => (
-                        <li key={index}>{ingredient}</li>
-                    ))}
-                </ul>
-            ) : (
-                <p>Δεν έχουν καταχωρηθεί συστατικά.</p>
-            )}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Rating
+                    name="recipe-rating"
+                    value={recipe.rating || 0}
+                    precision={0.5}
+                    readOnly
+                    emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
+                />
+                <Typography variant="body1" sx={{ ml: 1 }}>
+                    ({recipe.numReviews || 0} αξιολογήσεις)
+                </Typography>
+            </Box>
 
-            <h3>Βήματα:</h3>
-            {recipe.steps && recipe.steps.length > 0 ? (
-                <ol>
-                    {recipe.steps.map((step, index) => (
-                        <li key={index}>{step}</li>
-                    ))}
-                </ol>
-            ) : (
-                <p>Δεν έχουν καταχωρηθεί βήματα.</p>
-            )}
-            <br />
+            <Typography variant="body1" gutterBottom>
+                {recipe.description}
+            </Typography>
 
             {isOwner && (
-                <div>
-                    <button onClick={handleEdit} style={{ marginRight: '10px' }}>Επεξεργασία</button>
-                    <Button onClick={handleDelete} variant="contained" color="error">
+                <Box sx={{ mb: 2 }}>
+                    <Button variant="outlined" onClick={handleEdit} sx={{ mr: 1 }}>
+                        Επεξεργασία
+                    </Button>
+                    <Button variant="contained" color="error" onClick={handleDelete}>
                         Διαγραφή
                     </Button>
-                </div>
+                </Box>
             )}
 
-            <hr style={{ margin: '20px 0' }} />
-            <h3>Αξιολογήσεις & Σχόλια ({recipe.numReviews || 0})</h3>
-            {recipe.reviews && recipe.reviews.length > 0 ? (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                    {recipe.reviews.map((review) => (
-                        <li key={review._id} style={{ borderBottom: '1px solid #eee', marginBottom: '15px', paddingBottom: '15px' }}>
-                            <strong>{review.name}</strong>
-                            <div style={{ color: '#f8d00b'}}>
-                                Βαθμολογία: {review.rating}/5
-                            </div>
-                            <p>{review.comment}</p>
-                            <small style={{ color: 'grey' }}>
-                                Στις: {new Date(review.createdAt).toLocaleDateString()}
-                            </small>
-                        </li>
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant="h5" component="h3" gutterBottom>
+                Συστατικά
+            </Typography>
+            {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                <List dense>
+                    {recipe.ingredients.map((ingredient, index) => (
+                        <ListItem key={index}>
+                            <ListItemIcon sx={{ minWidth: '35px' }}>
+                                <RestaurantMenuIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary={ingredient} />
+                        </ListItem>
                     ))}
-                </ul>
-            ) : (
-                <p>Δεν υπάρχουν αξιολογήσεις ή σχόλια για αυτή τη συνταγή.</p>
-            )}
+                </List>
+            ) : ( <Typography variant="body2" color="text.secondary">Δεν υπάρχουν.</Typography> )}
 
-            <hr style={{ margin: '20px 0' }} />
-            <h3>Προσθήκη Αξιολόγησης</h3>
-            {user ? ( 
-                hasUserReviewed ? (
-                <p>Έχετε ήδη υποβάλει μια αξιολόγηση για αυτή τη συνταγή.</p>
-            ) : (
-                <form onSubmit={handleReviewSubmit}>
-                    {reviewError && <p style={{ color: 'red' }}>{reviewError}</p>}
-                    <div>
-                        <label htmlFor="rating">Βαθμολογία:</label>
-                        <select
-                            id="rating"
-                            value={newRating}
-                            onChange={(e) => setNewRating(Number(e.target.value))}
-                            required
-                            disabled={reviewLoading}
-                        >
-                            <option value={0}>Επιλέξτε...</option>
-                            <option value={1}>1 - Κακή</option>
-                            <option value={2}>2 - Μέτρια</option>
-                            <option value={3}>3 - Καλή</option>
-                            <option value={4}>4 - Πολύ Καλή</option>
-                            <option value={5}>5 - Εξαιρετική</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label htmlFor="comment">Σχόλιο:</label>
-                        <textarea
-                            id="comment"
-                            rows={3}
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            required
-                            disabled={reviewLoading}
-                        />
-                    </div>
-                    <button type="submit" disabled={reviewLoading}>
-                        {reviewLoading ? 'Υποβολή...' : 'Υποβολή Αξιολόγησης'}
-                    </button>
-                </form>
-            )
-            ) : (
-            <p>Παρακαλώ <Link to="/login">συνδεθείτε </Link>για να προσθέσετε αξιολόγηση.</p>
-            )}
+            
+            <Divider sx={{ my: 2 }} />
 
-            <br />
-            <Link to="/">Επιστροφή στη λίστα συνταγών</Link>
-        </div>
-    );
+            <Typography variant="h5" component="h3" gutterBottom>
+                Βήματα
+            </Typography>
+            {recipe.steps && recipe.steps.length > 0 ? (
+                <List>
+                    {recipe.steps.map((step, index) => (
+                        <ListItem key={index} alignItems="flex-start">
+                            <ListItemIcon sx={{ minWidth: '35px', mt: '4px'}}>
+                                <FormatListNumberedIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary={`${index + 1}. ${step}`} />
+                        </ListItem>
+                    ))}
+                </List>
+                ) : ( <Typography variant="body2" color="text.secondary">Δεν υπάρχουν.</Typography> )}
+
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="h5" component="h3" gutterBottom>
+                    Αξιολογήσεις & Σχόλια ({recipe.numReviews || 0})
+                </Typography>
+                {recipe.reviews && recipe.reviews.length > 0 ? (
+                    <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+                        {recipe.reviews.map((review, index) => (
+                            <React.Fragment key={review._id}>
+                                <ListItem alignItems="flex-start">
+                                    <ListItemText
+                                        primary={
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                <Typography variant="subtitle1" sx={{ mr: 1 }}>{review.name}</Typography>
+                                                <Rating name={`review-rating-${review._id}`} value={review.rating} readOnly size="small" />
+                                            </Box>
+                                        }
+                                        secondary={
+                                            <>
+                                                <Typography component="span" variant="body2" color="text.primary">
+                                                    {review.comment}
+                                                </Typography>
+                                                <Typography component="span" display="block" variant="caption" color="text.secondary">
+                                                    - {new Date(review.createdAt).toLocaleDateString()}
+                                                </Typography>
+                                            </>
+                                        }
+                                    />
+                                </ListItem>
+                                {index < recipe.reviews.length - 1 && <Divider variant="inset" component="li" />}
+                            </React.Fragment>
+                        ))}
+                    </List>
+                ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Δεν υπάρχουν αξολογήσεις ακόμα.</Typography>
+                )}
+
+                <Paper elevation={2} sx={{ p: 2, mt: 3 }}>
+                    <Typography variant="h6" component="h4" gutterBottom>
+                        Προσθήκη Αξιολόγησης
+                    </Typography>
+                    {user ? (
+                        hasUserReviewed ? (
+                            <Typography variant="body2">Έχετε ήδη αξιολογήσει αυτή τη συνταγή.</Typography>
+                        ) : (
+                            <Box component="form" onSubmit={handleReviewSubmit} noValidate sx={{ mt: 1 }}>
+                                {reviewError && <Alert severity="error" sx={{ mb: 2 }}>{reviewError}</Alert>}
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography component="legend">Βαθμολογία:</Typography>
+                                    <Rating
+                                        name="new-rating"
+                                        value={newRating}
+                                        onChange={( _ , newValue) => {
+                                            setNewRating(newValue);
+                                        }}
+                                        emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
+                                    />
+                                </Box>
+                                <TextField
+                                    margin="normal"
+                                    required
+                                    fullWidth
+                                    id="comment"
+                                    label="Το σχόλιο σας"
+                                    name="comment"
+                                    multiline
+                                    rows={4}
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    disabled={reviewLoading}
+                                />
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    disabled={reviewLoading || newRating === 0}
+                                    sx={{ mt: 1, mb: 1}}
+                                >
+                                    {reviewLoading ? 'Υποβολή...' : 'Υποβολή Αξιολόγησης'}
+                                </Button>
+                            </Box>
+                        )
+                    ) : (
+                        <Typography variant="body2">
+                            Παρακαλώ <RouterLink to="/login">συνδεθείτε</RouterLink> για να υποβάλετε μια αξιολόγηση.
+                        </Typography>
+                    )}
+                </Paper>
+
+                <Button component={RouterLink} to="/" sx={{ mt: 3 }}>
+                    Επιστροφή στη Λίστα Συνταγών
+                </Button>
+            </Box>
+        );
 }
 
 export default RecipeDetail;

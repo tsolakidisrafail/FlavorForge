@@ -106,6 +106,7 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 * **Users:**
 * `POST /api/users/register`: Εγγραφή νέου χρήστη
 * `POST /api/users/login`: Σύνδεση χρήστη (επιστρέφει token)
+* `GET /api/users/profile`: Λήψη προφίλ συνδεδεμένου χρήστη (Protected)
 
 ## Σχήμα Βάσης Δεδομένων (MongoDB Collections)
 

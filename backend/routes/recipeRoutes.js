@@ -4,6 +4,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Recipe = require('../models/Recipe');
 const { protect } = require('../middleware/authMiddleware'); // Import the protect middleware
+const User = require('../models/User'); // Import the User model
 
 // @desc Create a new recipe
 // @route GET /api/recipes
@@ -46,6 +47,24 @@ router.post('/', protect, async (req, res) => {
         });
 
         const savedRecipe = await newRecipe.save();
+
+        try {
+            const user = await User.findById(req.user._id);
+            if (user) {
+                user.points = (user.points || 0) + 10; // Add points for creating a recipe
+
+                const recipeCount = await Recipe.countDocuments({ user: req.user._id });
+                if (recipeCount === 1 && !user.badges.includes('First Recipe')) {
+                    user.badges.push('First Recipe'); // Add badge for first recipe
+                    console.log(`Awarded 'First Recipe' badge to user ${user.email}`);
+                }
+
+                await user.save(); // Save the updated user points and badges
+                console.log(`User ${user.email} points updated to ${user.points}`);
+            } 
+        } catch (gamificationError) {
+            console.error('Gamification error after recipe creation:', gamificationError);
+        }
 
         res.status(201).json(savedRecipe);
 
@@ -207,6 +226,23 @@ router.post('/:id/reviews', protect, async (req, res) => {
                 recipe.reviews.reduce((acc, item) => item.rating + acc, 0) /
                 recipe.reviews.length;
             await recipe.save();
+
+            try {
+                const user = await User.findById(req.user._id);
+                if (user) {
+                    user.points = (user.points || 0) + 2; // Add points for reviewing a recipe
+
+                    if (!user.badges.includes('First Review')) {
+                        user.badges.push('First Review'); // Add badge for first review
+                        console.log(`Awarded 'First Review' badge to user ${user.email}`);
+                    }
+
+                    await user.save(); // Save the updated user points and badges
+                    console.log(`User ${user.email} points updated to ${user.points}`);
+                }
+            } catch (gamificationError) {
+                console.error('Gamification error after review creation:', gamificationError);
+            }
 
             res.status(201).json({ message: 'Review added successfully' });
         } else {

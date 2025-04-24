@@ -22,6 +22,14 @@ const userSchema = new mongoose.Schema({
         minlength: 6,
         select: false // Do not return the password by default
     },
+    points: {
+        type: Number,
+        default: 0 // Default points for new users
+    },
+    badges: {
+        type: [String], // Array of strings to store badge names
+        default: [] // Default empty array for badges
+    },
     createdAt: {
         type: Date,
         default: Date.now
