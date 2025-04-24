@@ -13,6 +13,7 @@ import RecipeForm from './components/RecipeForm';
 import RecipeDetail from './components/RecipeDetail';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
+import UserProfile from './components/UserProfile';
 import ProtectedRoute from './components/ProtectedRoute';
 import RecipeEditForm from './components/RecipeEditForm';
 import './App.css';
@@ -43,6 +44,11 @@ function App() {
             </RouterLink>
           </Typography>
 
+          {user && (
+            <Button color="inherit" component={RouterLink} to="/profile" sx={{ ml: 1 }}>
+              Προφίλ
+            </Button>
+          )}
           <Button color="inherit" component={RouterLink} to="/add-recipe">
             Προσθήκη Συνταγής
           </Button>
@@ -76,6 +82,7 @@ function App() {
           <Route path="/recipes/:id" element={<RecipeDetail />} />
           <Route path="/add-recipe" element={<ProtectedRoute><RecipeForm /></ProtectedRoute>} />
           <Route path="/recipes/:id/edit" element={<ProtectedRoute><RecipeEditForm /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
         </Routes>
       </Container>
 
