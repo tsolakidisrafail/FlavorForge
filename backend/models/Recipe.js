@@ -44,6 +44,19 @@ const recipeSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    category: {
+        type: String,
+        required: [true, 'Please select a category'],
+        enum: [
+            'Ορεκτικό',
+            'Κυρίως Πιάτο',
+            'Σαλάτα',
+            'Σούπα',
+            'Γλυκό',
+            'Ρόφημα',
+            'Άλλο'
+        ]
+    },
     reviews: [reviewSchema],
     rating: {
         type: Number,

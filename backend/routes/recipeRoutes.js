@@ -12,6 +12,8 @@ const User = require('../models/User'); // Import the User model
 router.get('/', async (req, res) => {
     try {
         const searchTerm = req.query.search || ''; // Get the search term from query params
+        const categoryFilter = req.query.category || ''; // Get the category filter from query params
+        
         let filter = {};
 
         if (searchTerm) {
@@ -19,7 +21,13 @@ router.get('/', async (req, res) => {
             filter.title = { $regex: searchTerm, $options: 'i' };
         }
 
+        if (categoryFilter) {
+            filter.category = categoryFilter; // Filter by category if provided
+        }
+
+        console.log("Fetching recipes with filter:", filter); // Log the filter being used
         const recipes = await Recipe.find(filter);
+        
         res.json(recipes);
     } catch (error) {
         console.error('Error fetching recipes from DB:', error);
@@ -32,10 +40,10 @@ router.get('/', async (req, res) => {
 // @access Private
 router.post('/', protect, async (req, res) => {
     try {
-        const { title, description, ingredients, steps } = req.body;
+        const { title, description, ingredients, steps, category } = req.body;
 
-        if (!title) {
-            return res.status(400).json({ message: 'Title is required' });
+        if (!title || !category) {
+            return res.status(400).json({ message: 'Title and category are required' });
         }
 
         const newRecipe = new Recipe({
@@ -43,6 +51,7 @@ router.post('/', protect, async (req, res) => {
             description,
             ingredients,
             steps,
+            category,
             user: req.user._id // Use the user ID from the request
         });
 
@@ -103,7 +112,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', protect, async (req, res) => {
     try {
         const recipeId = req.params.id;
-        const { title, description, ingredients, steps } = req.body;
+        const { title, description, ingredients, steps, category } = req.body;
 
         // Check if the recipe ID is valid
         if (!mongoose.Types.ObjectId.isValid(recipeId)) {
@@ -124,8 +133,8 @@ router.put('/:id', protect, async (req, res) => {
         }
 
         // Check if the title is provided
-        if (!title) {
-            return res.status(400).json({ message: 'Title is required' });
+        if (!title || !category) {
+            return res.status(400).json({ message: 'Title and category are required' });
         }
 
         // Update the recipe fields
@@ -133,10 +142,10 @@ router.put('/:id', protect, async (req, res) => {
         recipe.description = description || recipe.description;
         recipe.ingredients = ingredients || recipe.ingredients;
         recipe.steps = steps || recipe.steps;
+        recipe.category = category || recipe.category;
 
         // Save the updated recipe
         const updatedRecipe = await recipe.save();
-
         res.json(updatedRecipe);
     } catch (error) {
         console.error('Error updating recipe:', error);

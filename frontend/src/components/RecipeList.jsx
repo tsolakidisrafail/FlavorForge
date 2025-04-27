@@ -11,8 +11,23 @@ import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 
 function RecipeList() {
+  // State variables
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const categories = [
+    'Ορεκτικό',
+    'Κυρίως Πιάτο',
+    'Σαλάτα',
+    'Σούπα',
+    'Γλυκό',
+    'Ρόφημα',
+    'Άλλο'
+  ];
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,12 +48,21 @@ function RecipeList() {
     setLoading(true);
     setError(null);
 
-    let apiUrl = '/api/recipes';
-    if (debouncedSearchTerm.trim()) {
-      apiUrl += `?search=${encodeURIComponent(debouncedSearchTerm.trim())}`;
+    const params = new URLSearchParams();
+
+    const termToSearch = debouncedSearchTerm.trim();
+    if (termToSearch) {
+      params.append('search', termToSearch);
     }
 
-    console.log(`Fetching recipes from (debounced): ${apiUrl}`);
+    if (selectedCategory) {
+      params.append('category', selectedCategory);
+    }
+
+    const queryString = params.toString();
+    const apiUrl = `/api/recipes${queryString ? `?${queryString}` : ''}`;
+
+    console.log(`Fetching recipes from (debounced + category): ${apiUrl}`);
 
     fetch(apiUrl)
       .then(response => {
@@ -56,7 +80,7 @@ function RecipeList() {
         setError(error.message);
         setLoading(false);
       });
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, selectedCategory]);
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -88,6 +112,26 @@ function RecipeList() {
         onChange={handleSearchChange}
         sx={{ mb: 4 }}
       />
+
+      <FormControl fullWidth margin="normal" sx={{ mb: 4 }}>
+        <InputLabel id="category-filter-label">Φίλτρο Κατηγορίας</InputLabel>
+        <Select
+          labelId="category-filter-label"
+          id="category-filter"
+          value={selectedCategory}
+          label="Φίλτρο Κατηγορίας"
+          onChange={(e) => setSelectedCategory(e.target.value)}
+        >
+          <MenuItem value="">
+            <em>Όλες οι Κατηγορίες</em>
+          </MenuItem>
+          {categories.map((categoryName) => (
+            <MenuItem key={categoryName} value={categoryName}>
+              {categoryName}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
       {recipes.length > 0 ? (
         <Grid container spacing={3}>
