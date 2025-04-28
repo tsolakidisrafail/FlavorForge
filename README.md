@@ -111,32 +111,6 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 * `POST /api/users/login`: Σύνδεση χρήστη (επιστρέφει token)
 * `GET /api/users/profile`: Λήψη προφίλ συνδεδεμένου χρήστη (Protected)
 
-## Σχήμα Βάσης Δεδομένων (MongoDB Collections)
-
-**`users`:**
-
-* `name`: String (Required)
-* `email`: String (Required, Unique)
-* `password`: String (Required, Hashed, Minlength 6, Not selected by default)
-* `createdAt`: Date (Default: Date.now)
-
-**`recipes`:**
-
-* `title`: String (Required)
-* `description`: String
-* `ingredients`: [String]
-* `steps`: [String]
-* `user`: ObjectId (Ref: 'User', Required)
-* `reviews`: [Subdocument]
-* `name`: String (Required)
-* `rating`: Number (Required)
-* `comment`: String (Required)
-* `user`: ObjectId (Ref: 'User', Required)
-* `createdAt`, `updatedAt`: Timestamps
-* `rating`: Number (Default: 0) - Μέση Βαθμολογία
-* `numReviews`: Number (Default: 0) - Πλήθος Αξιολογήσεων
-* `createdAt`, `updatedAt`: Timestamps
-
 ## Άδεια Χρήσης
 
 Αυτό το project χρησιμοποιεί την άδεια MIT License.
@@ -146,5 +120,65 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 * **Όνομα:** Ραφαήλ Τσολακίδης (tsolakidisrafail)
 * **Μάθημα:** Ανάπτυξη Εφαρμογών Ιστού & Βάσεων Δεδομένων
 * **Ίδρυμα:** Πανεπιστήμιο Ιωαννίνων, Τμήμα Πληροφορικής & Τηλεπικοινωνιών
+
+---
+
+## Σχήμα Βάσης Δεδομένων (MongoDB)
+
+Η βάση δεδομένων MongoDB αποτελείται από τα παρακάτω κύρια collections:
+
+### 1. `users` Collection
+
+Αποθηκεύει τις πληροφορίες των εγγεγραμμένων χρηστών.
+
+| Πεδίο      | Τύπος    | Περιγραφή / Περιορισμοί                                      |
+| :--------- | :------- | :----------------------------------------------------------- |
+| `_id`      | ObjectId | Μοναδικό ID που δίνεται αυτόματα από τη MongoDB.             |
+| `name`     | String   | Όνομα χρήστη (Required).                                    |
+| `email`    | String   | Email χρήστη (Required, Unique, Έλεγχος μορφής).           |
+| `password` | String   | Κρυπτογραφημένος (hashed) κωδικός (Required, Minlength: 6, Δεν επιστρέφεται από default - `select: false`). |
+| `points`   | Number   | Πόντοι από gamification (Default: 0).                     |
+| `badges`   | [String] | Πίνακας με τα ονόματα των badges που έχει ο χρήστης (Default: []). |
+| `createdAt`| Date     | Ημερομηνία/ώρα δημιουργίας (Αυτόματο, Default: Date.now).     |
+| `updatedAt`| Date     | Ημερομηνία/ώρα τελευταίας ενημέρωσης (Αυτόματο, από timestamps). |
+
+* **Σχέσεις:** Δεν έχει άμεσες αναφορές *προς* άλλα collections.
+
+### 2. `recipes` Collection
+
+Αποθηκεύει τις πληροφορίες για κάθε συνταγή.
+
+| Πεδίο        | Τύπος             | Περιγραφή / Περιορισμοί                                      |
+| :----------- | :---------------- | :----------------------------------------------------------- |
+| `_id`        | ObjectId          | Μοναδικό ID που δίνεται αυτόματα από τη MongoDB.             |
+| `title`      | String            | Τίτλος συνταγής (Required).                                 |
+| `description`| String            | Περιγραφή συνταγής (Optional).                               |
+| `ingredients`| [String]          | Πίνακας με τα συστατικά (Optional).                          |
+| `steps`      | [String]          | Πίνακας με τα βήματα εκτέλεσης (Optional).                     |
+| `category`   | String            | Κατηγορία συνταγής (Required, Enum: ['Ορεκτικό', 'Κυρίως Πιάτο', 'Σαλάτα', 'Σούπα', 'Γλυκό', 'Ρόφημα', 'Άλλο']). |
+| `user`       | ObjectId          | Το ID του χρήστη που δημιούργησε τη συνταγή (Required, `ref: 'User'`). |
+| `reviews`    | [Review SubDoc] | Πίνακας με τις αξιολογήσεις/σχόλια (βλ. παρακάτω).            |
+| `rating`     | Number            | Μέση βαθμολογία από τα reviews (Default: 0).                 |
+| `numReviews` | Number            | Πλήθος αξιολογήσεων (Default: 0).                           |
+| `createdAt`  | Date              | Ημερομηνία/ώρα δημιουργίας (Αυτόματο, Default: Date.now).     |
+| `updatedAt`  | Date              | Ημερομηνία/ώρα τελευταίας ενημέρωσης (Αυτόματο, από timestamps). |
+
+* **Σχέσεις:** Το πεδίο `user` συνδέεται με το `_id` του `users` collection.
+
+#### Ενσωματωμένο Σχήμα: `reviews` Subdocument
+
+Κάθε στοιχείο μέσα στον πίνακα `reviews` του `recipes` collection έχει την παρακάτω δομή:
+
+| Πεδίο      | Τύπος    | Περιγραφή / Περιορισμοί                               |
+| :--------- | :------- | :---------------------------------------------------- |
+| `_id`      | ObjectId | Μοναδικό ID για το review (δίνεται αυτόματα).         |
+| `name`     | String   | Όνομα χρήστη που έκανε το review (Required).         |
+| `rating`   | Number   | Βαθμολογία (Required, 1-5).                          |
+| `comment`  | String   | Το κείμενο του σχολίου (Required).                    |
+| `user`     | ObjectId | Το ID του χρήστη που έκανε το review (Required, `ref: 'User'`). |
+| `createdAt`| Date     | Ημερομηνία/ώρα δημιουργίας του review (Αυτόματο).    |
+| `updatedAt`| Date     | Ημερομηνία/ώρα τελευταίας ενημέρωσης του review (Αυτόματο). |
+
+* **Σχέσεις:** Το πεδίο `user` μέσα στο review συνδέεται με το `_id` του `users` collection.
 
 ---
