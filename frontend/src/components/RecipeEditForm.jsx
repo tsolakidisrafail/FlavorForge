@@ -119,13 +119,14 @@ function RecipeEditForm() {
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
                     {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
 
-                    <TextField margin="normal" required fullWidth id="edit-title" label="Τίτλος Συνταγής" name="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading}/>
-                    <TextField margin="normal" fullWidth id="edit-description" label="Περιγραφή" name="description" multiline rows={3} value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading}/>
+                    <TextField margin="normal" required fullWidth id="title" label="Τίτλος Συνταγής" name="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={loading}/>
+                    <TextField margin="normal" fullWidth id="description" label="Περιγραφή" name="description" multiline rows={3} value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading}/>
                     <FormControl fullWidth required margin="normal" disabled={loading}>
                         <InputLabel id="category-select-label">Κατηγορία</InputLabel>
                         <Select
                             labelId="category-select-label"
                             id="category-select"
+                            name="category"
                             value={category}
                             label="Κατηγορία"
                             onChange={(e) => setCategory(e.target.value)}
@@ -143,8 +144,8 @@ function RecipeEditForm() {
                             <MenuItem value={'Άλλο'}>Άλλο</MenuItem>
                         </Select>
                     </FormControl>
-                    <TextField margin="normal" fullWidth id="edit-ingredients" label="Συστατικά (ένα ανά γραμμή)" name="ingredients" multiline rows={5} value={ingredients} onChange={(e) => setIngredients(e.target.value)} disabled={loading} helperText="Γράψτε κάθε συστατικό σε νέα γραμμή."/>
-                    <TextField margin="normal" fullWidth id="edit-steps" label="Βήματα (ένα ανά γραμμή)" name="steps" multiline rows={8} value={steps} onChange={(e) => setSteps(e.target.value)} disabled={loading} helperText="Γράψτε κάθε βήμα σε νέα γραμμή."/>
+                    <TextField margin="normal" fullWidth id="ingredients" label="Συστατικά (ένα ανά γραμμή)" name="ingredients" multiline rows={5} value={ingredients} onChange={(e) => setIngredients(e.target.value)} disabled={loading} helperText="Γράψτε κάθε συστατικό σε νέα γραμμή."/>
+                    <TextField margin="normal" fullWidth id="steps" label="Βήματα (ένα ανά γραμμή)" name="steps" multiline rows={8} value={steps} onChange={(e) => setSteps(e.target.value)} disabled={loading} helperText="Γράψτε κάθε βήμα σε νέα γραμμή."/>
 
                         <Button
                             type="submit"

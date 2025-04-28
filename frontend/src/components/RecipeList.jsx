@@ -1,6 +1,7 @@
 // frontend/src/components/RecipeList.jsx
 import React, { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import Skeleton from '@mui/material/Skeleton';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -88,8 +89,18 @@ function RecipeList() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
+      <Box sx={{ flexGrow: 1, mt: 4 }}>
+        <Skeleton variant="text" width="80%" sx={{ mb: 4, fontSize: '1.5rem' }} />
+        <Skeleton variant="rectangular" width="100%" height={56} sx={{ mb: 4 }} />
+        <Grid container spacing={3}>
+          {[...Array(6)].map((_, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Skeleton variant="rectangular" height={200} />
+              <Skeleton variant="text" sx={{ fontSize: '1.25rem' }} />
+              <Skeleton variant="text" width="80%" />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }
@@ -118,6 +129,7 @@ function RecipeList() {
         <Select
           labelId="category-filter-label"
           id="category-filter"
+          name="categoryFilter"
           value={selectedCategory}
           label="Φίλτρο Κατηγορίας"
           onChange={(e) => setSelectedCategory(e.target.value)}
@@ -136,7 +148,7 @@ function RecipeList() {
       {recipes.length > 0 ? (
         <Grid container spacing={3}>
           {recipes.map((recipe => (
-            <Grid item xs={12} sm={6} md={4} key={recipe._id}>
+            <Grid xs={12} sm={6} md={4} key={recipe._id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography gutterBottom variant="h5" component="div">

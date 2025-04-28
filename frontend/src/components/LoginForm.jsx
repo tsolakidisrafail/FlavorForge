@@ -70,7 +70,7 @@ function LoginForm() {
             margin="normal"
             required
             fullWidth
-            id="login-email"
+            id="email"
             label="Διεύθυνση Email"
             name="email"
             autoComplete="email"
@@ -86,7 +86,7 @@ function LoginForm() {
             name="password"
             label="Κωδικός Πρόσβασης"
             type="password"
-            id="login-password"
+            id="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

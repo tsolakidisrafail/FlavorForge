@@ -96,26 +96,32 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 
 ## API Endpoints
 
-* **Recipes:**
+**Recipes:**
+
 * `GET /api/recipes?search=...&category=...`: Λίστα συνταγών (με φίλτρα αναζήτησης τίτλου και κατηγορίας)
 * `POST /api/recipes`: Δημιουργία νέας συνταγής (Protected)
 * `GET /api/recipes/:id`: Λεπτομέρειες μίας συνταγής
 * `PUT /api/recipes/:id`: Ενημέρωση συνταγής (Protected, Owner only)
 * `DELETE /api/recipes/:id`: Διαγραφή συνταγής (Protected, Owner only)
 * `POST /api/recipes/:id/reviews`: Προσθήκη αξιολόγησης (Protected)
-* **Users:**
+
+**Users:**
+
 * `POST /api/users/register`: Εγγραφή νέου χρήστη
 * `POST /api/users/login`: Σύνδεση χρήστη (επιστρέφει token)
 * `GET /api/users/profile`: Λήψη προφίλ συνδεδεμένου χρήστη (Protected)
 
 ## Σχήμα Βάσης Δεδομένων (MongoDB Collections)
 
-* **`users`:**
+**`users`:**
+
 * `name`: String (Required)
 * `email`: String (Required, Unique)
 * `password`: String (Required, Hashed, Minlength 6, Not selected by default)
 * `createdAt`: Date (Default: Date.now)
-* **`recipes`:**
+
+**`recipes`:**
+
 * `title`: String (Required)
 * `description`: String
 * `ingredients`: [String]

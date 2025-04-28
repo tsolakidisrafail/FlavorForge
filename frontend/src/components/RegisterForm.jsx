@@ -86,7 +86,7 @@ function RegisterForm() {
             margin="normal"
             required
             fullWidth
-            id="register-email"
+            id="email"
             label="Διεύθυνση Email"
             name="email"
             autoComplete="email"
@@ -103,7 +103,7 @@ function RegisterForm() {
             name="password"
             label="Κωδικός Πρόσβασης"
             type="password"
-            id="register-password"
+            id="password"
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
