@@ -3,267 +3,162 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Recipe = require('../models/Recipe');
-const { protect } = require('../middleware/authMiddleware'); // Import the protect middleware
-const User = require('../models/User'); // Import the User model
+const User = require('../models/User'); // Χρειάζεται για το gamification
+const { protect } = require('../middleware/authMiddleware');
 
-// @desc Create a new recipe
-// @route GET /api/recipes
-// @access Public
+// GET /api/recipes (με search/category filter - παραμένει ίδιο)
 router.get('/', async (req, res) => {
-    try {
-        const searchTerm = req.query.search || ''; // Get the search term from query params
-        const categoryFilter = req.query.category || ''; // Get the category filter from query params
-        
-        let filter = {};
-
-        if (searchTerm) {
-            // Use regex to create a case-insensitive search
-            filter.title = { $regex: searchTerm, $options: 'i' };
-        }
-
-        if (categoryFilter) {
-            filter.category = categoryFilter; // Filter by category if provided
-        }
-
-        console.log("Fetching recipes with filter:", filter); // Log the filter being used
-        const recipes = await Recipe.find(filter);
-        
-        res.json(recipes);
-    } catch (error) {
-        console.error('Error fetching recipes from DB:', error);
-        res.status(500).json({ message: 'Server Error: Could not fetch recipes' });
-    }
+  try {
+    const searchTerm = req.query.search || '';
+    const categoryFilter = req.query.category || '';
+    let filter = {};
+    if (searchTerm) { filter.title = { $regex: searchTerm, $options: 'i' }; }
+    if (categoryFilter) { filter.category = categoryFilter; }
+    console.log("Fetching recipes with filter:", filter);
+    const recipes = await Recipe.find(filter);
+    res.json(recipes);
+  } catch (error) { console.error('Error fetching recipes:', error); res.status(500).json({ message: 'Server Error' }); }
 });
 
-// @desc Create a new recipe
-// @route POST /api/recipes
-// @access Private
+// POST /api/recipes (Δημιουργία - περιμένει ingredients/steps ως strings που θα γίνουν split)
 router.post('/', protect, async (req, res) => {
-    try {
-        const { title, description, ingredients, steps, category } = req.body;
+  try {
+    // ΔΕΝ περιμένουμε servings, τα ingredients/steps έρχονται από textarea (πρέπει να γίνουν split)
+    const { title, description, ingredients, steps, category } = req.body;
 
-        if (!title || !category) {
-            return res.status(400).json({ message: 'Title and category are required' });
-        }
-
-        const newRecipe = new Recipe({
-            title,
-            description,
-            ingredients,
-            steps,
-            category,
-            user: req.user._id // Use the user ID from the request
-        });
-
-        const savedRecipe = await newRecipe.save();
-
-        try {
-            const user = await User.findById(req.user._id);
-            if (user) {
-                user.points = (user.points || 0) + 10; // Add points for creating a recipe
-
-                const recipeCount = await Recipe.countDocuments({ user: req.user._id });
-                if (recipeCount === 1 && !user.badges.includes('First Recipe')) {
-                    user.badges.push('First Recipe'); // Add badge for first recipe
-                    console.log(`Awarded 'First Recipe' badge to user ${user.email}`);
-                }
-
-                await user.save(); // Save the updated user points and badges
-                console.log(`User ${user.email} points updated to ${user.points}`);
-            } 
-        } catch (gamificationError) {
-            console.error('Gamification error after recipe creation:', gamificationError);
-        }
-
-        res.status(201).json(savedRecipe);
-
-    } catch (error) {
-        console.error('Error creating recipe:', error);
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: 'Validation Error', errors: error.errors });
-        }
-        res.status(500).json({ message: 'Server Error: Could not create recipe' });
+    if (!title || !category) { // Δεν ελέγχουμε servings/ingredients εδώ άμεσα
+      return res.status(400).json({ message: 'Title and category are required' });
     }
+
+    const newRecipe = new Recipe({
+      title: title.trim(),
+      description: description.trim(),
+      // Μετατροπή από string (ένα ανά γραμμή) σε πίνακα
+      ingredients: ingredients ? ingredients.split('\n').filter(line => line.trim() !== '') : [],
+      steps: steps ? steps.split('\n').filter(line => line.trim() !== '') : [],
+      category,
+      // ΟΧΙ servings
+      user: req.user._id
+    });
+
+    const savedRecipe = await newRecipe.save();
+
+    // --- GAMIFICATION LOGIC (παραμένει ίδιο) ---
+     try {
+         const user = await User.findById(req.user._id);
+         if (user) {
+             user.points = (user.points || 0) + 10;
+             const recipeCount = await Recipe.countDocuments({ user: req.user._id });
+             if (recipeCount === 1 && !user.badges.includes('First Recipe')) { user.badges.push('First Recipe'); }
+             await user.save();
+         }
+     } catch (gamificationError) { console.error('Gamification error:', gamificationError); }
+     // --- GAMIFICATION LOGIC END ---
+
+    res.status(201).json(savedRecipe);
+
+  } catch (error) {
+    console.error('Error creating recipe:', error);
+    if (error.name === 'ValidationError') { return res.status(400).json({ message: 'Validation Error', errors: error.errors }); }
+    res.status(500).json({ message: 'Server Error' });
+  }
 });
 
-// @desc Get a recipe by ID
-// @route GET /api/recipes/:id
-// @access Public
+// GET /api/recipes/:id (Λεπτομέρειες - παραμένει ίδιο)
 router.get('/:id', async (req, res) => {
-    try {
-        const recipeId = req.params.id;
-        if (!mongoose.Types.ObjectId.isValid(recipeId)) {
-            return res.status(400).json({ message: 'Invalid Recipe ID format' });
-        }
-        const recipe = await Recipe.findById(recipeId);
-        if (!recipe) {
-            return res.status(404).json({ message: 'Recipe not found' });
-        }
-        res.json(recipe);
-    } catch (error) {
-        console.error('Error fetching recipe:', error);
-        res.status(500).json({ message: 'Server Error: Could not fetch recipe' });
-    }
+   try {
+     const recipeId = req.params.id;
+     if (!mongoose.Types.ObjectId.isValid(recipeId)) { return res.status(400).json({ message: 'Invalid ID' }); }
+     const recipe = await Recipe.findById(recipeId); //.populate('user', 'name email'); // Optional populate
+     if (!recipe) { return res.status(404).json({ message: 'Recipe not found' }); }
+     res.json(recipe);
+   } catch (error) { console.error('Error fetching single recipe:', error); res.status(500).json({ message: 'Server Error' }); }
 });
 
-// @desc Update a recipe by ID
-// @route PUT /api/recipes/:id
-// @access Private
+
+// PUT /api/recipes/:id (Ενημέρωση - περιμένει ingredients/steps ως strings)
 router.put('/:id', protect, async (req, res) => {
-    try {
-        const recipeId = req.params.id;
-        const { title, description, ingredients, steps, category } = req.body;
+  try {
+    const recipeId = req.params.id;
+    // ΔΕΝ περιμένουμε servings, τα ingredients/steps έρχονται από textarea
+    const { title, description, ingredients, steps, category } = req.body;
 
-        // Check if the recipe ID is valid
-        if (!mongoose.Types.ObjectId.isValid(recipeId)) {
-            return res.status(400).json({ message: 'Invalid Recipe ID format' });
-        }
+    if (!mongoose.Types.ObjectId.isValid(recipeId)) { return res.status(400).json({ message: 'Invalid ID' }); }
 
-        // Find the recipe by ID
-        const recipe = await Recipe.findById(recipeId);
+    const recipe = await Recipe.findById(recipeId);
+    if (!recipe) { return res.status(404).json({ message: 'Recipe not found' }); }
+    if (recipe.user.toString() !== req.user._id.toString()) { return res.status(401).json({ message: 'Not authorized' }); }
 
-        // Check if the recipe exists
-        if (!recipe) {
-            return res.status(404).json({ message: 'Recipe not found' });
-        }
+    // Ενημέρωσε τα πεδία
+    recipe.title = title?.trim() ?? recipe.title; // Χρησιμοποίησε ?? για να επιτρέπεις κενό string αν θέλεις
+    recipe.description = description?.trim() ?? recipe.description;
+    // Μετατροπή string σε πίνακα κατά την ενημέρωση
+    recipe.ingredients = ingredients ? ingredients.split('\n').filter(line => line.trim() !== '') : recipe.ingredients;
+    recipe.steps = steps ? steps.split('\n').filter(line => line.trim() !== '') : recipe.steps;
+    recipe.category = category ?? recipe.category;
+    // ΟΧΙ servings
 
-        // Check if the user is the owner of the recipe
-        if (recipe.user.toString() !== req.user._id.toString()) {
-            return res.status(401).json({ message: 'User not authorized to update this recipe' });
-        }
+     // Έλεγχος αν τα υποχρεωτικά είναι ΟΚ *μετά* την ενημέρωση
+     if (!recipe.title || !recipe.category) {
+         return res.status(400).json({ message: 'Title and category are required after update' });
+     }
 
-        // Check if the title is provided
-        if (!title || !category) {
-            return res.status(400).json({ message: 'Title and category are required' });
-        }
+    const updatedRecipe = await recipe.save();
+    res.json(updatedRecipe);
 
-        // Update the recipe fields
-        recipe.title = title || recipe.title;
-        recipe.description = description || recipe.description;
-        recipe.ingredients = ingredients || recipe.ingredients;
-        recipe.steps = steps || recipe.steps;
-        recipe.category = category || recipe.category;
-
-        // Save the updated recipe
-        const updatedRecipe = await recipe.save();
-        res.json(updatedRecipe);
-    } catch (error) {
-        console.error('Error updating recipe:', error);
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: 'Validation Error', errors: error.errors });
-        }
-        res.status(500).json({ message: 'Server Error: Could not update recipe' });
-    }
+  } catch (error) {
+    console.error('Error updating recipe:', error);
+     if (error.name === 'ValidationError') { return res.status(400).json({ message: 'Validation Error', errors: error.errors }); }
+    res.status(500).json({ message: 'Server Error' });
+  }
 });
 
-// @desc Delete a recipe by ID
-// @route DELETE /api/recipes/:id
-// @access Private
+
+// DELETE /api/recipes/:id (Διαγραφή - παραμένει ίδιο)
 router.delete('/:id', protect, async (req, res) => {
-    try {
-        const recipeId = req.params.id;
-
-        // Check if the recipe ID is valid
-        if (!mongoose.Types.ObjectId.isValid(recipeId)) {
-            return res.status(400).json({ message: 'Invalid Recipe ID format' });
-        }
-
-        // Find the recipe by ID
-        const recipe = await Recipe.findById(recipeId);
-
-        // Check if the recipe exists
-        if (!recipe) {
-            return res.status(404).json({ message: 'Recipe not found' });
-        }
-
-        // Check if the user is the owner of the recipe
-        if (recipe.user.toString() !== req.user._id.toString()) {
-            return res.status(401).json({ message: 'User not authorized to delete this recipe' });
-        }
-
-        // Delete the recipe
-        await recipe.deleteOne();
-
-        res.json({ message: 'Recipe deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting recipe:', error);
-        res.status(500).json({ message: 'Server Error: Could not delete recipe' });
-    }
+  try {
+    const recipeId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(recipeId)) { return res.status(400).json({ message: 'Invalid ID' }); }
+    const recipe = await Recipe.findById(recipeId);
+    if (!recipe) { return res.status(404).json({ message: 'Recipe not found' }); }
+    if (recipe.user.toString() !== req.user._id.toString()) { return res.status(401).json({ message: 'Not authorized' }); }
+    await recipe.deleteOne();
+    res.json({ message: 'Recipe removed' });
+  } catch (error) { console.error('Error deleting recipe:', error); res.status(500).json({ message: 'Server Error' }); }
 });
 
-// @desc Add a review to a recipe
-// @route POST /api/recipes/:id/reviews
-// @access Private
+// POST /api/recipes/:id/reviews (Προσθήκη review - παραμένει ίδιο)
 router.post('/:id/reviews', protect, async (req, res) => {
     const { rating, comment } = req.body;
-
-    if (!rating || !comment) {
-        return res.status(400).json({ message: 'Rating and comment are required' });
-    }
     const numericRating = Number(rating);
-    if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
-        return res.status(400).json({ message: 'Rating must be a number between 1 and 5' });
-    }
+    if (!rating || !comment || isNaN(numericRating) || numericRating < 1 || numericRating > 5) { return res.status(400).json({ message: 'Valid rating (1-5) and comment are required' }); }
 
     try {
-        const recipeId = req.params.id;
+        const recipe = await Recipe.findById(req.params.id);
+        if (!recipe) { return res.status(404).json({ message: 'Recipe not found' }); }
+        const alreadyReviewed = recipe.reviews.some(r => r.user.toString() === req.user._id.toString());
+        if (alreadyReviewed) { return res.status(400).json({ message: 'Already reviewed' }); }
 
-        // Βρίσκει τη συνταγή στην οποία θα προστεθεί η κριτική
-        const recipe = await Recipe.findById(recipeId);
+        const review = { name: req.user.name, rating: numericRating, comment, user: req.user._id };
+        recipe.reviews.push(review);
+        recipe.numReviews = recipe.reviews.length;
+        recipe.rating = recipe.reviews.reduce((acc, item) => item.rating + acc, 0) / recipe.reviews.length;
+        await recipe.save();
 
-        if (recipe) {
-            const alreadyReviewed = recipe.reviews.find(
-                (r) => r.user.toString() === req.user._id.toString()
-            );
+        // --- GAMIFICATION LOGIC (παραμένει ίδιο) ---
+         try {
+             const user = await User.findById(req.user._id);
+             if (user) {
+                 user.points = (user.points || 0) + 2;
+                 if (!user.badges.includes('First Review')) { user.badges.push('First Review');}
+                 await user.save();
+             }
+         } catch (gamificationError) { console.error('Gamification error after review:', gamificationError); }
+         // --- GAMIFICATION LOGIC END ---
 
-            if (alreadyReviewed) {
-                res.status(400).json({ message: 'Recipe already reviewed' });
-                return;
-            }
-
-            const review = {
-                name: req.user.name,
-                rating: numericRating,
-                comment: comment,
-                user: req.user._id,
-            };
-
-            recipe.reviews.push(review);
-            recipe.numReviews = recipe.reviews.length;
-
-            recipe.rating =
-                recipe.reviews.reduce((acc, item) => item.rating + acc, 0) /
-                recipe.reviews.length;
-            await recipe.save();
-
-            try {
-                const user = await User.findById(req.user._id);
-                if (user) {
-                    user.points = (user.points || 0) + 2; // Add points for reviewing a recipe
-
-                    if (!user.badges.includes('First Review')) {
-                        user.badges.push('First Review'); // Add badge for first review
-                        console.log(`Awarded 'First Review' badge to user ${user.email}`);
-                    }
-
-                    await user.save(); // Save the updated user points and badges
-                    console.log(`User ${user.email} points updated to ${user.points}`);
-                }
-            } catch (gamificationError) {
-                console.error('Gamification error after review creation:', gamificationError);
-            }
-
-            res.status(201).json({ message: 'Review added successfully' });
-        } else {
-            res.status(404).json({ message: 'Recipe not found' });
-        }
-    } catch (error) {
-        console.error('Error adding review:', error);
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: 'Validation Error', errors: error.errors });
-        }
-        res.status(500).json({ message: 'Server Error: Could not add review' });
-    }
+        res.status(201).json({ message: 'Review added' });
+    } catch (error) { console.error('Error adding review:', error); res.status(500).json({ message: 'Server Error' }); }
 });
+
 
 module.exports = router;

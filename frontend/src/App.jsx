@@ -1,5 +1,5 @@
 // frontend/src/App.jsx
-import React, { useState, useContext } from 'react';
+import React, { useContext } from 'react';
 import { Routes, Route, Link as RouterLink, useNavigate } from 'react-router-dom';
 import AuthContext from './context/AuthContext';
 import AppBar from '@mui/material/AppBar';
@@ -25,6 +25,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { useState } from 'react';
 import RecipeList from './components/RecipeList';
 import RecipeForm from './components/RecipeForm';
 import RecipeDetail from './components/RecipeDetail';
@@ -53,6 +54,67 @@ function App() {
     }
     setDrawerOpen(open);
   };
+
+  const drawerList = (
+    <Box
+      sx={{ width: 250 }}
+      role="presentation"
+      onClick={toggleDrawer(false)}
+      onKeyDown={toggleDrawer(false)}
+    >
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/">
+            <ListItemIcon><HomeIcon /></ListItemIcon>
+            <ListItemText primary="Αρχική" />
+          </ListItemButton>
+        </ListItem>
+
+        {user && (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton component={RouterLink} to="/profile">
+                <ListItemIcon><AccountCircleIcon /></ListItemIcon>
+                <ListItemText primary="Προφίλ" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton component={RouterLink} to="/add-recipe">
+                <ListItemIcon><AddCircleOutlineIcon /></ListItemIcon>
+                <ListItemText primary="Προσθήκη Συνταγής" />
+              </ListItemButton>
+            </ListItem>
+          </>
+        )}
+        
+        <Divider />
+
+        {user ? (
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleLogout}>
+              <ListItemIcon><LogoutIcon /></ListItemIcon>
+              <ListItemText primary="Αποσύνδεση" />
+            </ListItemButton>
+          </ListItem>
+        ) : (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton component={RouterLink} to="/login">
+                <ListItemIcon><LoginIcon /></ListItemIcon>
+                <ListItemText primary="Σύνδεση" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton component={RouterLink} to="/register">
+                <ListItemIcon><AppRegistrationIcon /></ListItemIcon>
+                <ListItemText primary="Εγγραφή" />
+              </ListItemButton>
+            </ListItem>
+          </>
+        )}
+      </List>
+    </Box>
+  );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -111,65 +173,8 @@ function App() {
         open={drawerOpen}
         onClose={toggleDrawer(false)}
       >
-        <Box
-          sx={{ width: 250 }}
-          role="presentation"
-          onClick={toggleDrawer(false)}
-          onKeyDown={toggleDrawer(false)}
-        >
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton component={RouterLink} to="/">
-                <ListItemIcon><HomeIcon /></ListItemIcon>
-                <ListItemText primary="Αρχική" />
-              </ListItemButton>
-            </ListItem>
-
-            {user && (
-              <>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/profile">
-                    <ListItemIcon><AccountCircleIcon /></ListItemIcon>
-                    <ListItemText primary="Προφίλ" />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/add-recipe">
-                    <ListItemIcon><AddCircleOutlineIcon /></ListItemIcon>
-                    <ListItemText primary="Προσθήκη Συνταγής" />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-            
-            <Divider />
-
-            {user ? (
-              <ListItem disablePadding>
-                <ListItemButton onClick={handleLogout}>
-                  <ListItemIcon><LogoutIcon /></ListItemIcon>
-                  <ListItemText primary="Αποσύνδεση" />
-                </ListItemButton>
-              </ListItem>
-            ) : (
-              <>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/login">
-                    <ListItemIcon><LoginIcon /></ListItemIcon>
-                    <ListItemText primary="Σύνδεση" />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/register">
-                    <ListItemIcon><AppRegistrationIcon /></ListItemIcon>
-                    <ListItemText primary="Εγγραφή" />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-          </List>
-        </Box>
-        </Drawer>
+        {drawerList}
+      </Drawer>
 
       <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
         <Routes>
