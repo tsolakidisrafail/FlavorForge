@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const Recipe = require('../models/Recipe');
 const User = require('../models/User'); // Χρειάζεται για το gamification
 const { protect } = require('../middleware/authMiddleware');
+const { calculateLevel } = require('../utils/gamificationUtils'); // Χρειάζεται για το gamification
 
 // GET /api/recipes (με search/category filter - παραμένει ίδιο)
 router.get('/', async (req, res) => {
@@ -17,7 +18,10 @@ router.get('/', async (req, res) => {
     console.log("Fetching recipes with filter:", filter);
     const recipes = await Recipe.find(filter);
     res.json(recipes);
-  } catch (error) { console.error('Error fetching recipes:', error); res.status(500).json({ message: 'Server Error' }); }
+  } catch (error) { 
+    console.error('Error fetching recipes:', error); 
+    res.status(500).json({ message: 'Server Error' }); 
+  }
 });
 
 // POST /api/recipes (Δημιουργία - περιμένει ingredients/steps ως strings που θα γίνουν split)
@@ -34,8 +38,8 @@ router.post('/', protect, async (req, res) => {
       title: title.trim(),
       description: description.trim(),
       // Μετατροπή από string (ένα ανά γραμμή) σε πίνακα
-      ingredients: ingredients ? ingredients.split('\n').filter(line => line.trim() !== '') : [],
-      steps: steps ? steps.split('\n').filter(line => line.trim() !== '') : [],
+      ingredients: typeof ingredients === 'string' ? ingredients.split('\n').filter(line => line.trim() !== '') : [],
+      steps: typeof steps === 'string' ? steps.split('\n').filter(line => line.trim() !== '') : [],
       category,
       // ΟΧΙ servings
       user: req.user._id
@@ -43,16 +47,35 @@ router.post('/', protect, async (req, res) => {
 
     const savedRecipe = await newRecipe.save();
 
-    // --- GAMIFICATION LOGIC (παραμένει ίδιο) ---
+    // --- GAMIFICATION LOGIC ---
      try {
          const user = await User.findById(req.user._id);
          if (user) {
-             user.points = (user.points || 0) + 10;
-             const recipeCount = await Recipe.countDocuments({ user: req.user._id });
-             if (recipeCount === 1 && !user.badges.includes('First Recipe')) { user.badges.push('First Recipe'); }
-             await user.save();
+              const pointsForNewRecipe = 10;
+              user.points = (user.points || 0) + pointsForNewRecipe; // Προσθήκη πόντων για τη νέα συνταγή
+
+              const recipeCount = await Recipe.countDocuments({ user: req.user._id });
+              if (recipeCount === 1 && !user.badges.includes('First Recipe')) {
+                  user.badges.push('First Recipe'); // Προσθήκη badge για την πρώτη συνταγή
+              }
+
+              if (recipeCount === 5 && !user.badges.includes('Master Chef Lvl 1')) {
+                  user.badges.push('Master Chef Lvl 1'); // Προσθήκη badge για 5 συνταγές
+              }
+
+              const newLevel = calculateLevel(user.points); // Υπολογισμός νέου επιπέδου
+              if (newLevel !== user.level) {
+                  user.level = newLevel; // Ενημέρωση επιπέδου
+                  if (!user.badges.includes(`Level ${newLevel}`)) {
+                      user.badges.push(`Level ${newLevel}`); // Προσθήκη badge για νέο επίπεδο
+                  }
+              }
+
+              await user.save(); // Αποθήκευση αλλαγών στον χρήστη
          }
-     } catch (gamificationError) { console.error('Gamification error:', gamificationError); }
+      } catch (gamificationError) {
+          console.error('Gamification error during recipe creation:', gamificationError);
+      }
      // --- GAMIFICATION LOGIC END ---
 
     res.status(201).json(savedRecipe);
@@ -68,8 +91,10 @@ router.post('/', protect, async (req, res) => {
 router.get('/:id', async (req, res) => {
    try {
      const recipeId = req.params.id;
-     if (!mongoose.Types.ObjectId.isValid(recipeId)) { return res.status(400).json({ message: 'Invalid ID' }); }
-     const recipe = await Recipe.findById(recipeId); //.populate('user', 'name email'); // Optional populate
+     if (!mongoose.Types.ObjectId.isValid(recipeId)) { 
+      return res.status(400).json({ message: 'Invalid ID' }); 
+    }
+     const recipe = await Recipe.findById(recipeId).populate('user', 'name level');
      if (!recipe) { return res.status(404).json({ message: 'Recipe not found' }); }
      res.json(recipe);
    } catch (error) { console.error('Error fetching single recipe:', error); res.status(500).json({ message: 'Server Error' }); }
@@ -89,12 +114,15 @@ router.put('/:id', protect, async (req, res) => {
     if (!recipe) { return res.status(404).json({ message: 'Recipe not found' }); }
     if (recipe.user.toString() !== req.user._id.toString()) { return res.status(401).json({ message: 'Not authorized' }); }
 
-    // Ενημέρωσε τα πεδία
     recipe.title = title?.trim() ?? recipe.title; // Χρησιμοποίησε ?? για να επιτρέπεις κενό string αν θέλεις
     recipe.description = description?.trim() ?? recipe.description;
     // Μετατροπή string σε πίνακα κατά την ενημέρωση
-    recipe.ingredients = ingredients ? ingredients.split('\n').filter(line => line.trim() !== '') : recipe.ingredients;
-    recipe.steps = steps ? steps.split('\n').filter(line => line.trim() !== '') : recipe.steps;
+    if (ingredients !== undefined) {
+        recipe.ingredients = Array.isArray(ingredients) ? ingredients : recipe.ingredients;
+    }
+    if (steps !== undefined) {
+        recipe.steps = Array.isArray(steps) ? steps : recipe.steps;
+    }
     recipe.category = category ?? recipe.category;
     // ΟΧΙ servings
 
@@ -124,7 +152,10 @@ router.delete('/:id', protect, async (req, res) => {
     if (recipe.user.toString() !== req.user._id.toString()) { return res.status(401).json({ message: 'Not authorized' }); }
     await recipe.deleteOne();
     res.json({ message: 'Recipe removed' });
-  } catch (error) { console.error('Error deleting recipe:', error); res.status(500).json({ message: 'Server Error' }); }
+  } catch (error) { 
+    console.error('Error deleting recipe:', error); 
+    res.status(500).json({ message: 'Server Error' }); 
+  }
 });
 
 // POST /api/recipes/:id/reviews (Προσθήκη review - παραμένει ίδιο)
@@ -145,16 +176,57 @@ router.post('/:id/reviews', protect, async (req, res) => {
         recipe.rating = recipe.reviews.reduce((acc, item) => item.rating + acc, 0) / recipe.reviews.length;
         await recipe.save();
 
-        // --- GAMIFICATION LOGIC (παραμένει ίδιο) ---
+        // --- GAMIFICATION LOGIC ---
          try {
-             const user = await User.findById(req.user._id);
-             if (user) {
-                 user.points = (user.points || 0) + 2;
-                 if (!user.badges.includes('First Review')) { user.badges.push('First Review');}
-                 await user.save();
+             const reviewUser = await User.findById(req.user._id);
+             if (reviewUser) {
+                  const pointsForReview = 2;
+                  reviewUser.points = (reviewUser.points || 0) + pointsForReview; // Προσθήκη πόντων για τη νέα κριτική
+
+                  if (!reviewUser.badges.includes('First Review')) {
+                      const userReviewCount = await Recipe.countDocuments({ 'reviews.user': req.user._id });
+                      if (userReviewCount === 1) {
+                          reviewUser.badges.push('First Review'); // Προσθήκη badge για την πρώτη κριτική
+                      }
+                  }
+
+                  const newLevel = calculateLevel(reviewUser.points); // Υπολογισμός νέου επιπέδου
+                  if (newLevel !== reviewUser.level) {
+                      reviewUser.level = newLevel; // Ενημέρωση επιπέδου
+                      if (!reviewUser.badges.includes(`Level ${newLevel}`)) {
+                          reviewUser.badges.push(`Level ${newLevel}`); // Προσθήκη badge για νέο επίπεδο
+                      }
+                  }
+                  await reviewUser.save(); // Αποθήκευση αλλαγών στον χρήστη
+              }
+          } catch (gamificationErrorReviewer) {
+              console.error('Gamification error for reviewer:', gamificationErrorReviewer);
+          }
+         // --- GAMIFICATION LOGIC REVIEWER END ---
+
+         if (recipe.user.toString() !== req.user._id.toString()) {
+             const popularRatingThreshold = 4.5; // Κατώφλι για δημοφιλή συνταγή
+             const popularReviewCount = 5; // Αριθμός κριτικών για να θεωρηθεί δημοφιλής
+             if (recipe.rating >= popularRatingThreshold && recipe.numReviews >= popularReviewCount) {
+                 try {
+                     const owner = await User.findById(recipe.user);
+                     if (owner && !owner.badges.includes('Popular Plate')) {
+                         owner.badges.push('Popular Plate'); // Προσθήκη badge για δημοφιλή συνταγή
+                         owner.points = (owner.points || 0) + 15; // Προσθήκη πόντων για δημοφιλή συνταγή
+                         const ownerNewLevel = calculateLevel(owner.points); // Υπολογισμός νέου επιπέδου
+                         if (ownerNewLevel !== owner.level) {
+                             owner.level = ownerNewLevel; // Ενημέρωση επιπέδου
+                             if (!owner.badges.includes(`Level ${ownerNewLevel}`)) {
+                                 owner.badges.push(`Level ${ownerNewLevel}`); // Προσθήκη badge για νέο επίπεδο
+                             }
+                         }
+                         await owner.save(); // Αποθήκευση αλλαγών στον ιδιοκτήτη
+                      }
+                  } catch (gamificationErrorOwner) {
+                      console.error('Gamification error for recipe owner:', gamificationErrorOwner);
+                  }
              }
-         } catch (gamificationError) { console.error('Gamification error after review:', gamificationError); }
-         // --- GAMIFICATION LOGIC END ---
+          }
 
         res.status(201).json({ message: 'Review added' });
     } catch (error) { console.error('Error adding review:', error); res.status(500).json({ message: 'Server Error' }); }

@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema({
         type: [String], // Array of strings to store badge names
         default: [] // Default empty array for badges
     },
+    level: {
+        type: Number,
+        default: 1 // Default level for new users
+    },
     createdAt: {
         type: Date,
         default: Date.now

@@ -106,7 +106,10 @@ function RecipeDetail() {
   if (!recipe) { return <Alert severity="warning" sx={{ mt: 2 }}>Δεν βρέθηκαν δεδομένα συνταγής.</Alert>; }
 
   // Moved calculations inside return or memoize them if needed
-  const isOwner = user && recipe && recipe.user && user._id === recipe.user; // Assuming recipe.user is ID string
+  console.log('User ID from context:', user?._id, typeof user?._id); // Debugging line
+  console.log('Recipe user from API:', recipe?.user, typeof recipe?.user); // Debugging line
+  const isOwner = user && recipe && recipe.user && typeof recipe.user === 'object' && user._id === recipe.user._id; // Assuming recipe.user is ID string
+  console.log('Is owner:', isOwner); // Debugging line  
   const hasUserReviewed = recipe && user && recipe.reviews?.some(review => review.user === user._id);
 
 
@@ -119,8 +122,6 @@ function RecipeDetail() {
       </Box>
       <Typography variant="body1" gutterBottom> {recipe.description} </Typography>
        <Typography variant="body2" color="text.secondary" gutterBottom>Κατηγορία: {recipe.category}</Typography> {/* Display Category */}
-       {/* Display Original Servings */}
-       {recipe.servings && <Typography variant="body2" color="text.secondary" gutterBottom>Μερίδες: {recipe.servings}</Typography>}
 
 
       {isOwner && ( <Box sx={{ mb: 2 }}> <Button variant="outlined" onClick={handleEdit} sx={{ mr: 1 }}>Επεξεργασία</Button> <Button variant="contained" color="error" onClick={handleDelete}>Διαγραφή</Button> </Box> )}
@@ -162,7 +163,17 @@ function RecipeDetail() {
             <React.Fragment key={review._id}>
               <ListItem alignItems="flex-start">
                 <ListItemText
-                  primary={ <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}> <Typography variant="subtitle1" sx={{ mr: 1 }}>{review.name}</Typography> <Rating name={`review-rating-${review._id}`} value={review.rating} readOnly size="small" /> </Box> }
+                  primary={ 
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}> 
+                  <Typography variant="subtitle1" sx={{ mr: 1 }}>{review.name}</Typography>
+                  {review.userLevel && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
+                      (Level: {review.userLevel})
+                    </Typography>
+                  )} 
+                  <Rating name={`review-rating-${review._id}`} value={review.rating} readOnly size="small" /> 
+                  </Box> 
+                  }
                   secondary={ <> <Typography component="span" variant="body2" color="text.primary">{review.comment}</Typography> <Typography component="span" display="block" variant="caption" color="text.secondary"> - {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Άγνωστη ημερομηνία'} </Typography> </> }
                 />
               </ListItem>

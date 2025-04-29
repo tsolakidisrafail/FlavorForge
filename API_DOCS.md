@@ -90,19 +90,25 @@
 
 * **Route:** `/users/profile`
 * **Method:** `GET`
-* **Description:** Επιστρέφει τα στοιχεία του προφίλ του συνδεδεμένου χρήστη.
+* **Description:** Επιστρέφει τα στοιχεία του προφίλ του συνδεδεμένου χρήστη, **συμπεριλαμβανομένων των στατιστικών παιχνιδοποίησης (gamification).**
 * **Access:** Private (Απαιτείται Bearer Token στο `Authorization` header)
 * **Request Body:** None
 * **Success Response:**
     * **Code:** `200 OK`
-    * **Content:**
+    * **Content:** (**ΕΝΗΜΕΡΩΜΕΝΟ ΠΑΡΑΔΕΙΓΜΑ**)
         ```json
         {
             "_id": "ObjectId",
             "name": "String",
             "email": "String",
-            "points": Number,
-            "badges": ["String"],
+            "points": 115,
+            "badges": ["First Recipe", "First Review"],
+            "level": 2,
+            "levelName": "Apprentice Chef",
+            "progress": {
+                 "currentLevelBasePoints": 50,
+                 "pointsForNextLevel": 150
+            },
             "createdAt": "Date"
             // Δεν επιστρέφεται το password
         }
@@ -146,11 +152,13 @@
         { "message": "Server Error: Could not fetch recipes" }
         ```
 
+## Recipes (`/recipes`)
+
 ### 2. Create Recipe
 
 * **Route:** `/recipes`
 * **Method:** `POST`
-* **Description:** Δημιουργεί μια νέα συνταγή.
+* **Description:** Δημιουργεί μια νέα συνταγή. **Σημείωση:** Η ενέργεια αυτή απονέμει πόντους και πιθανά badges ("First Recipe", "Master Chef") στον χρήστη.
 * **Access:** Private (Απαιτείται Bearer Token)
 * **Request Body:**
     ```json
@@ -167,16 +175,8 @@
     * **Content:** `Recipe` (Το αντικείμενο της συνταγής που δημιουργήθηκε - βλ. παρακάτω)
 * **Error Responses:**
     * **Code:** `400 Bad Request` (Validation Error, λείπουν πεδία)
-        ```json
-        { "message": "Title and category are required" }
-        // or
-        { "message": "Validation Error", "errors": { ... } }
-        ```
     * **Code:** `401 Unauthorized` (Λείπει/Λάθος token)
     * **Code:** `500 Internal Server Error`
-        ```json
-        { "message": "Server Error: Could not create recipe" }
-        ```
 
 ### 3. Get Single Recipe
 
@@ -262,7 +262,7 @@
 
 * **Route:** `/recipes/:id/reviews`
 * **Method:** `POST`
-* **Description:** Προσθέτει μια νέα αξιολόγηση/σχόλιο σε μια συνταγή.
+* **Description:** Προσθέτει μια νέα αξιολόγηση/σχόλιο σε μια συνταγή. **Σημείωση:** Η ενέργεια αυτή απονέμει πόντους και πιθανά badges ("First Review", Level Up) στον χρήστη που κάνει την αξιολόγηση. Επίσης, μπορεί να απονείμει πόντους/badges ("Popular Plate") στον ιδιοκτήτη της συνταγής αν πληρούνται συγκεκριμένα κριτήρια.
 * **Access:** Private (Απαιτείται Bearer Token)
 * **URL Parameters:**
     * `id` (ObjectId, Required): Το ID της συνταγής που αξιολογείται.
@@ -279,21 +279,12 @@
         ```json
         { "message": "Review added successfully" }
         ```
+      **Σημείωση:** Δεν επιστρέφεται το πλήρες αντικείμενο της συνταγής μετά την προσθήκη αξιολόγησης.
 * **Error Responses:**
-    * **Code:** `400 Bad Request` (Validation Error, Λείπουν πεδία, Rating εκτός ορίων, User already reviewed)
-        ```json
-        { "message": "Rating and comment are required" }
-        // or
-        { "message": "Rating must be a number between 1 and 5" }
-        // or
-        { "message": "Recipe already reviewed by this user" }
-        ```
+    * **Code:** `400 Bad Request` (Validation Error, User already reviewed, etc.)
     * **Code:** `401 Unauthorized` (Λείπει/Λάθος token)
     * **Code:** `404 Not Found` (Η συνταγή δεν βρέθηκε)
     * **Code:** `500 Internal Server Error`
-        ```json
-        { "message": "Server Error: Could not add review" }
-        ```
 
 ---
 
@@ -316,7 +307,7 @@
             "name": "String",
             "rating": Number,
             "comment": "String",
-            "user": "ObjectId",
+            "user": "ObjectId", // ή object αν γίνεται populate
             "createdAt": "Date",
             "updatedAt": "Date"
         }

@@ -12,13 +12,13 @@ import { SnackbarProvider } from './context/SnackbarProvider';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#ff9800',
+      main: '#885133',
     },
     secondary: {
-      main: '#4caf50',
+      main: '#f4f0ec',
     },
     background: {
-      default: '#f5f5f5',
+      default: '#f0e6d7',
     },
     },
     typography: {

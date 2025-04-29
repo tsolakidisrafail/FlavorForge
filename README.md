@@ -18,9 +18,9 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 * [x] Κατηγοριοποίηση συνταγών
 * [ ] Προσαρμογή μερίδων και μονάδων μέτρησης
 * [ ] Δημιουργία εβδομαδιαίου πλάνου γευμάτων
-* [ ] Ενσωμάτωση τουλάχιστον 2 στοιχείων παιχνιδοποίησης
-* [ ] Βελτιώσεις UI/UX (MUI Forms, Responsive Design, Styling)
-* [ ] Τελική Τεκμηρίωση (API docs, DB Schema refinement)
+* [x] Ενσωμάτωση τουλάχιστον 2 στοιχείων παιχνιδοποίησης
+* [x] Βελτιώσεις UI/UX (MUI Forms, Responsive Design, Styling)
+* [x] Τελική Τεκμηρίωση (API docs, DB Schema refinement)
 
 ## Τεχνολογίες
 
@@ -134,12 +134,13 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 | Πεδίο      | Τύπος    | Περιγραφή / Περιορισμοί                                      |
 | :--------- | :------- | :----------------------------------------------------------- |
 | `_id`      | ObjectId | Μοναδικό ID που δίνεται αυτόματα από τη MongoDB.             |
-| `name`     | String   | Όνομα χρήστη (Required).                                    |
-| `email`    | String   | Email χρήστη (Required, Unique, Έλεγχος μορφής).           |
+| `name`     | String   | Όνομα χρήστη (Required).                                     |
+| `email`    | String   | Email χρήστη (Required, Unique, Έλεγχος μορφής).             |
 | `password` | String   | Κρυπτογραφημένος (hashed) κωδικός (Required, Minlength: 6, Δεν επιστρέφεται από default - `select: false`). |
-| `points`   | Number   | Πόντοι από gamification (Default: 0).                     |
+| `points`   | Number   | Πόντοι από gamification (Default: 0).                        |
 | `badges`   | [String] | Πίνακας με τα ονόματα των badges που έχει ο χρήστης (Default: []). |
-| `createdAt`| Date     | Ημερομηνία/ώρα δημιουργίας (Αυτόματο, Default: Date.now).     |
+| `level`    | Number   | Επίπεδο χρήστη βάσει πόντων (Default: 1). |
+| `createdAt`| Date     | Ημερομηνία/ώρα δημιουργίας (Αυτόματο, Default: Date.now).    |
 | `updatedAt`| Date     | Ημερομηνία/ώρα τελευταίας ενημέρωσης (Αυτόματο, από timestamps). |
 
 * **Σχέσεις:** Δεν έχει άμεσες αναφορές *προς* άλλα collections.
@@ -151,16 +152,16 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 | Πεδίο        | Τύπος             | Περιγραφή / Περιορισμοί                                      |
 | :----------- | :---------------- | :----------------------------------------------------------- |
 | `_id`        | ObjectId          | Μοναδικό ID που δίνεται αυτόματα από τη MongoDB.             |
-| `title`      | String            | Τίτλος συνταγής (Required).                                 |
+| `title`      | String            | Τίτλος συνταγής (Required).                                  |
 | `description`| String            | Περιγραφή συνταγής (Optional).                               |
 | `ingredients`| [String]          | Πίνακας με τα συστατικά (Optional).                          |
-| `steps`      | [String]          | Πίνακας με τα βήματα εκτέλεσης (Optional).                     |
+| `steps`      | [String]          | Πίνακας με τα βήματα εκτέλεσης (Optional).                   |
 | `category`   | String            | Κατηγορία συνταγής (Required, Enum: ['Ορεκτικό', 'Κυρίως Πιάτο', 'Σαλάτα', 'Σούπα', 'Γλυκό', 'Ρόφημα', 'Άλλο']). |
 | `user`       | ObjectId          | Το ID του χρήστη που δημιούργησε τη συνταγή (Required, `ref: 'User'`). |
-| `reviews`    | [Review SubDoc] | Πίνακας με τις αξιολογήσεις/σχόλια (βλ. παρακάτω).            |
+| `reviews`    | [Review SubDoc] | Πίνακας με τις αξιολογήσεις/σχόλια (βλ. παρακάτω).             |
 | `rating`     | Number            | Μέση βαθμολογία από τα reviews (Default: 0).                 |
-| `numReviews` | Number            | Πλήθος αξιολογήσεων (Default: 0).                           |
-| `createdAt`  | Date              | Ημερομηνία/ώρα δημιουργίας (Αυτόματο, Default: Date.now).     |
+| `numReviews` | Number            | Πλήθος αξιολογήσεων (Default: 0).                            |
+| `createdAt`  | Date              | Ημερομηνία/ώρα δημιουργίας (Αυτόματο, Default: Date.now).    |
 | `updatedAt`  | Date              | Ημερομηνία/ώρα τελευταίας ενημέρωσης (Αυτόματο, από timestamps). |
 
 * **Σχέσεις:** Το πεδίο `user` συνδέεται με το `_id` του `users` collection.
@@ -172,11 +173,11 @@ FlavorForge: Μια διαδικτυακή πλατφόρμα για δημιο�
 | Πεδίο      | Τύπος    | Περιγραφή / Περιορισμοί                               |
 | :--------- | :------- | :---------------------------------------------------- |
 | `_id`      | ObjectId | Μοναδικό ID για το review (δίνεται αυτόματα).         |
-| `name`     | String   | Όνομα χρήστη που έκανε το review (Required).         |
-| `rating`   | Number   | Βαθμολογία (Required, 1-5).                          |
+| `name`     | String   | Όνομα χρήστη που έκανε το review (Required).          |
+| `rating`   | Number   | Βαθμολογία (Required, 1-5).                           |
 | `comment`  | String   | Το κείμενο του σχολίου (Required).                    |
 | `user`     | ObjectId | Το ID του χρήστη που έκανε το review (Required, `ref: 'User'`). |
-| `createdAt`| Date     | Ημερομηνία/ώρα δημιουργίας του review (Αυτόματο).    |
+| `createdAt`| Date     | Ημερομηνία/ώρα δημιουργίας του review (Αυτόματο).     |
 | `updatedAt`| Date     | Ημερομηνία/ώρα τελευταίας ενημέρωσης του review (Αυτόματο). |
 
 * **Σχέσεις:** Το πεδίο `user` μέσα στο review συνδέεται με το `_id` του `users` collection.

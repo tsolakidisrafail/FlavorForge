@@ -63,8 +63,8 @@ function RecipeEditForm() {
         const updatedRecipeData = {
             title: title.trim(),
             description: description.trim(),
-            ingredients: ingredients.split('\n').filter(line => line.trim() !== ''), // <-- Split string
-            steps: steps.split('\n').filter(line => line.trim() !== ''),             // <-- Split string
+            ingredients: (ingredients || '').split('\n').filter(line => line.trim() !== ''), // Ensure ingredients is a string
+            steps: (steps || '').split('\n').filter(line => line.trim() !== ''),             // <-- Ensure steps is a string
             category,
             // ΟΧΙ servings
         };
