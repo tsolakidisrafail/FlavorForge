@@ -1,6 +1,29 @@
 // backend/models/Recipe.js
 const mongoose = require('mongoose');
 
+const ingredientSchema = new mongoose.Schema(
+  {
+    quantity: { 
+      type: Number,
+      required: false
+    },
+    unit: {
+      type: String,
+      required: false,
+      trim: true
+    },
+    name: {
+      type: String,
+      required: [true, 'Ingredient name is required'],
+      trim: true
+    },
+    notes: {
+      type: String,
+      required: false,
+      trim: true
+    }
+  }, { _id: false }); // Ορίζουμε το _id ως false για να μην δημιουργείται αυτόματα id για κάθε στοιχείο του πίνακα
+
 // Schema για κάθε Review (Παραμένει ίδιο)
 const reviewSchema = new mongoose.Schema(
   {
@@ -25,30 +48,34 @@ const recipeSchema = new mongoose.Schema(
       required: [true, 'Please add a title'],
       trim: true
     },
-    description: { type: String, required: false },
-
-    // ---> ΕΠΑΝΑΦΟΡΑ: Υλικά ως πίνακας από strings <---
-    ingredients: {
-        type: [String], // Πίνακας από strings όπως πριν
-        required: false
+    description: { 
+      type: String, 
+      required: false 
     },
-    // ---> ΤΕΛΟΣ ΕΠΑΝΑΦΟΡΑΣ <---
-
-    steps: { // Τα βήματα ήταν ήδη [String]
+    servings: {
+      type: Number,
+      required: [true, 'Please add the number of servings'],
+      min: [1, 'Servings must be at least 1'],
+      default: 4
+    },
+    // --- ΕΝΗΜΕΡΩΜΕΝΟ: Συστατικά ως Πίνακας Αντικειμένων ---
+    ingredients: [ingredientSchema], // Χρησιμοποιούμε το ingredientSchema εδώ
+    // ---
+    steps: { 
         type: [String],
         required: false
     },
-    category: { // Η κατηγορία παραμένει
+    category: { 
       type: String,
       required: [true, 'Please select a category'],
       enum: ['Ορεκτικό', 'Κυρίως Πιάτο', 'Σαλάτα', 'Σούπα', 'Γλυκό', 'Ρόφημα', 'Άλλο']
     },
-    user: { // Ο χρήστης παραμένει
+    user: { 
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User'
     },
-    reviews: [reviewSchema], // Τα reviews παραμένουν
+    reviews: [reviewSchema], 
     rating: {
       type: Number,
       required: true,
@@ -58,11 +85,10 @@ const recipeSchema = new mongoose.Schema(
       type: Number,
       required: true,
       default: 0,
-    },
-    // ΟΧΙ πεδίο servings
+    },  
   },
   {
-    timestamps: true, // Τα timestamps παραμένουν
+    timestamps: true,
   }
 );
 

@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Recipe = require('../models/Recipe');
-const User = require('../models/User'); // Χρειάζεται για το gamification
+const User = require('../models/User');
 const { protect } = require('../middleware/authMiddleware');
 const { calculateLevel } = require('../utils/gamificationUtils'); // Χρειάζεται για το gamification
 
@@ -27,21 +27,20 @@ router.get('/', async (req, res) => {
 // POST /api/recipes (Δημιουργία - περιμένει ingredients/steps ως strings που θα γίνουν split)
 router.post('/', protect, async (req, res) => {
   try {
-    // ΔΕΝ περιμένουμε servings, τα ingredients/steps έρχονται από textarea (πρέπει να γίνουν split)
-    const { title, description, ingredients, steps, category } = req.body;
+  
+    const { title, description, servings, ingredients, steps, category } = req.body;
 
-    if (!title || !category) { // Δεν ελέγχουμε servings/ingredients εδώ άμεσα
-      return res.status(400).json({ message: 'Title and category are required' });
+    if (!title || !category || !servings) {
+      return res.status(400).json({ message: 'Title, category and servings are required' });
     }
 
     const newRecipe = new Recipe({
       title: title.trim(),
-      description: description.trim(),
-      // Μετατροπή από string (ένα ανά γραμμή) σε πίνακα
-      ingredients: typeof ingredients === 'string' ? ingredients.split('\n').filter(line => line.trim() !== '') : [],
-      steps: typeof steps === 'string' ? steps.split('\n').filter(line => line.trim() !== '') : [],
-      category,
-      // ΟΧΙ servings
+      description: description?.trim(),
+      servings: servings,
+      ingredients: ingredients,
+      steps: steps,
+      category: category,
       user: req.user._id
     });
 
@@ -82,7 +81,10 @@ router.post('/', protect, async (req, res) => {
 
   } catch (error) {
     console.error('Error creating recipe:', error);
-    if (error.name === 'ValidationError') { return res.status(400).json({ message: 'Validation Error', errors: error.errors }); }
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: 'Validation Error', errors: messages });
+    }
     res.status(500).json({ message: 'Server Error' });
   }
 });
@@ -106,7 +108,7 @@ router.put('/:id', protect, async (req, res) => {
   try {
     const recipeId = req.params.id;
     // ΔΕΝ περιμένουμε servings, τα ingredients/steps έρχονται από textarea
-    const { title, description, ingredients, steps, category } = req.body;
+    const { title, description, servings, ingredients, steps, category } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(recipeId)) { return res.status(400).json({ message: 'Invalid ID' }); }
 
@@ -114,21 +116,16 @@ router.put('/:id', protect, async (req, res) => {
     if (!recipe) { return res.status(404).json({ message: 'Recipe not found' }); }
     if (recipe.user.toString() !== req.user._id.toString()) { return res.status(401).json({ message: 'Not authorized' }); }
 
-    recipe.title = title?.trim() ?? recipe.title; // Χρησιμοποίησε ?? για να επιτρέπεις κενό string αν θέλεις
+    recipe.title = title?.trim() ?? recipe.title;
     recipe.description = description?.trim() ?? recipe.description;
-    // Μετατροπή string σε πίνακα κατά την ενημέρωση
-    if (ingredients !== undefined) {
-        recipe.ingredients = Array.isArray(ingredients) ? ingredients : recipe.ingredients;
-    }
-    if (steps !== undefined) {
-        recipe.steps = Array.isArray(steps) ? steps : recipe.steps;
-    }
-    recipe.category = category ?? recipe.category;
-    // ΟΧΙ servings
+    recipe.servings = servings ?? recipe.servings; // Αν δεν υπάρχει servings, κρατάμε την παλιά τιμή
+    recipe.ingredients = ingredients ?? recipe.ingredients; // Αν δεν υπάρχει ingredients, κρατάμε την παλιά τιμή
+    recipe.steps = steps ?? recipe.steps; // Αν δεν υπάρχει steps, κρατάμε την παλιά τιμή
+    recipe.category = category ?? recipe.category; // Αν δεν υπάρχει category, κρατάμε την παλιά τιμή
 
      // Έλεγχος αν τα υποχρεωτικά είναι ΟΚ *μετά* την ενημέρωση
-     if (!recipe.title || !recipe.category) {
-         return res.status(400).json({ message: 'Title and category are required after update' });
+     if (!recipe.title || !recipe.category || !recipe.servings) {
+         return res.status(400).json({ message: 'Title, category and servings are required after update' });
      }
 
     const updatedRecipe = await recipe.save();
@@ -136,7 +133,10 @@ router.put('/:id', protect, async (req, res) => {
 
   } catch (error) {
     console.error('Error updating recipe:', error);
-     if (error.name === 'ValidationError') { return res.status(400).json({ message: 'Validation Error', errors: error.errors }); }
+     if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: 'Validation Error', errors: messages });
+    }
     res.status(500).json({ message: 'Server Error' });
   }
 });
