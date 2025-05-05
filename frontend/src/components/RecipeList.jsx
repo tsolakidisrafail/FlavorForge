@@ -9,7 +9,6 @@ import CardActions from '@mui/material/CardActions';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import FormControl from '@mui/material/FormControl';
@@ -17,70 +16,60 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Skeleton from '@mui/material/Skeleton';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // Icon for Select button
+import Divider from '@mui/material/Divider';
 
-function RecipeList() {
+
+// --- ΝΕΟ: Προσθήκη onRecipeSelect στα props ---
+function RecipeList({ onRecipeSelect = null }) { // Default σε null αν δεν δοθεί
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm); // Για debouncing
-  const [selectedCategory, setSelectedCategory] = useState(''); // Για φίλτρο κατηγορίας
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const categories = ['Ορεκτικό', 'Κυρίως Πιάτο', 'Σαλάτα', 'Σούπα', 'Γλυκό', 'Ρόφημα', 'Άλλο'];
 
-  // useEffect for debouncing search term
+  // useEffect for debouncing search term (Παραμένει ίδιο)
   useEffect(() => {
-    const timerId = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
-    return () => {
-      clearTimeout(timerId);
-    };
+    const timerId = setTimeout(() => { setDebouncedSearchTerm(searchTerm); }, 500);
+    return () => { clearTimeout(timerId); };
   }, [searchTerm]);
 
-  // useEffect for fetching data based on debounced search and category
+  // useEffect for fetching data (Παραμένει ίδιο)
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-
+    setLoading(true); setError(null);
     const params = new URLSearchParams();
     const termToSearch = debouncedSearchTerm.trim();
-    if (termToSearch) {
-      params.append('search', termToSearch);
-    }
-    if (selectedCategory) {
-      params.append('category', selectedCategory);
-    }
+    if (termToSearch) params.append('search', termToSearch);
+    if (selectedCategory) params.append('category', selectedCategory);
     const queryString = params.toString();
     const apiUrl = `/api/recipes${queryString ? `?${queryString}` : ''}`;
 
-    console.log(`Fetching from (debounced + category): ${apiUrl}`);
-
+    // console.log(`Workspaceing recipes for list/modal: ${apiUrl}`); // Debug
     fetch(apiUrl)
       .then(response => {
-        if (!response.ok) { throw new Error('Network response was not ok'); }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
       })
       .then(data => { setRecipes(data); setLoading(false); })
       .catch(error => { console.error('Error fetching recipes:', error); setError(error.message); setLoading(false); });
-
   }, [debouncedSearchTerm, selectedCategory]);
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
+  const handleSearchChange = (event) => { setSearchTerm(event.target.value); };
 
+  // --- Loading Skeleton (Ίδιο) ---
   if (loading) {
-    // Skeleton Loader
     return (
-      <Box sx={{ flexGrow: 1, mt: 4 }}>
-        <Skeleton variant="text" width="40%" sx={{ mb: 1, fontSize: '2rem' }} />
-        <Skeleton variant="rectangular" width="100%" height={56} sx={{ mb: 4 }} />
-        <Grid container spacing={3}>
+      <Box sx={{ flexGrow: 1, mt: 2 }}> {/* Reduced mt */}
+        {/* {!onRecipeSelect && <Skeleton variant="text" width="40%" sx={{ mb: 1, fontSize: '2rem' }} />} */} {/* Title only if not in modal? */}
+        <Skeleton variant="rectangular" width="100%" height={56} sx={{ mb: 2 }} />
+        <Grid container spacing={2}>
           {[...Array(6)].map((_, index) => (
-            <Grid xs={12} sm={6} md={4} key={index}>
-              <Skeleton variant="rectangular" height={180} />
-              <Skeleton variant="text" sx={{ fontSize: '1.25rem' }} />
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Skeleton variant="rectangular" height={140} /> {/* Slightly smaller */}
+              <Skeleton variant="text" sx={{ fontSize: '1rem' }} />
               <Skeleton variant="text" width="80%" />
             </Grid>
           ))}
@@ -89,15 +78,18 @@ function RecipeList() {
     );
   }
 
-  if (error) {
-    return <Alert severity="error" sx={{ mt: 2 }}>Error loading recipes: {error}</Alert>;
-  }
+  // --- Error Display (Ίδιο) ---
+   if (error) { return <Alert severity="error" sx={{ mt: 2 }}>Σφάλμα φόρτωσης συνταγών: {error}</Alert>; }
 
+  // --- JSX Εμφάνισης ---
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" component="h2" gutterBottom>Συνταγές</Typography>
-      <TextField label="Αναζήτηση συνταγής..." variant="outlined" fullWidth value={searchTerm} onChange={handleSearchChange} sx={{ mb: 2 }}/>
-       <FormControl fullWidth margin="normal" sx={{ mb: 4 }}>
+      {/* Εμφάνιση τίτλου/φίλτρων μόνο αν *δεν* είμαστε σε modal (δηλ. δεν δόθηκε onRecipeSelect) */}
+      {!onRecipeSelect && (
+          <Typography variant="h4" component="h2" gutterBottom>Συνταγές</Typography>
+      )}
+       <TextField label="Αναζήτηση συνταγής..." variant="outlined" fullWidth value={searchTerm} onChange={handleSearchChange} sx={{ mb: 2 }} size="small"/> {/* Μικρότερο μέγεθος */}
+       <FormControl fullWidth margin="normal" sx={{ mb: onRecipeSelect ? 2 : 4 }} size="small"> {/* Μικρότερο μέγεθος & margin αν είμαστε σε modal */}
            <InputLabel id="category-filter-label">Φίλτρο Κατηγορίας</InputLabel>
            <Select labelId="category-filter-label" id="category-filter" name="categoryFilter" value={selectedCategory} label="Φίλτρο Κατηγορίας" onChange={(e) => setSelectedCategory(e.target.value)} >
                 <MenuItem value=""><em>Όλες οι Κατηγορίες</em></MenuItem>
@@ -105,25 +97,56 @@ function RecipeList() {
            </Select>
        </FormControl>
 
+      {/* Λίστα Συνταγών */}
       {recipes.length > 0 ? (
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {recipes.map((recipe) => (
-            <Grid xs={12} sm={6} md={4} key={recipe._id}>
+            <Grid item xs={12} sm={onRecipeSelect ? 12 : 6} md={onRecipeSelect ? 6 : 4} key={recipe._id}> {/* Διαφορετικό layout στο modal */}
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography gutterBottom variant="h5" component="div">{recipe.title}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {recipe.description?.substring(0, 100)}{recipe.description?.length > 100 ? '...' : ''}
+                <CardContent sx={{ flexGrow: 1, py: 1, px: 1.5 }}> {/* Λιγότερο padding */}
+                  <Typography gutterBottom variant="h6" component="div" sx={{fontSize: '1rem'}}> {/* Μικρότερος τίτλος */}
+                     {recipe.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Κατηγορία: {recipe.category}
-                  </Typography>
-                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                       Βαθμολογία: {recipe.rating ? recipe.rating.toFixed(1) : 'N/A'} ({recipe.numReviews || 0})
-                   </Typography>
+                  {/* Μπορούμε να κρύψουμε περιγραφή/rating στο modal για οικονομία χώρου */}
+                   {!onRecipeSelect && (
+                       <>
+                           <Typography variant="body2" color="text.secondary">
+                               {recipe.description?.substring(0, 80)}{recipe.description?.length > 80 ? '...' : ''}
+                           </Typography>
+                           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                               Κατηγορία: {recipe.category} | Βαθμ: {recipe.rating ? recipe.rating.toFixed(1) : 'N/A'} ({recipe.numReviews || 0})
+                           </Typography>
+                       </>
+                   )}
+                   {/* Εμφάνιση κατηγορίας πάντα (ίσως χρήσιμο) */}
+                    {onRecipeSelect && (
+                         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                             Κατηγορία: {recipe.category}
+                         </Typography>
+                    )}
                 </CardContent>
-                <CardActions>
-                  <Button size="small" component={RouterLink} to={`/recipes/${recipe._id}`}>Δες Λεπτομέρειες</Button>
+                 <Divider />
+                <CardActions sx={{ justifyContent: 'flex-end' }}>
+                   {/* --- ΑΛΛΑΓΗ ΕΔΩ: Εμφάνιση κουμπιού ανάλογα το prop --- */}
+                   {onRecipeSelect ? (
+                       <Button
+                           size="small"
+                           variant="contained" // Καλύτερο για επιλογή
+                           color="primary"
+                           onClick={() => onRecipeSelect(recipe)} // Καλεί τη συνάρτηση που δόθηκε
+                           startIcon={<CheckCircleOutlineIcon />}
+                        >
+                           Επιλογή
+                       </Button>
+                   ) : (
+                       <Button
+                           size="small"
+                           component={RouterLink}
+                           to={`/recipes/${recipe._id}`}
+                        >
+                            Δες Λεπτομέρειες
+                       </Button>
+                   )}
                 </CardActions>
               </Card>
             </Grid>

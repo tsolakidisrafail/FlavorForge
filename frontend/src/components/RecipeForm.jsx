@@ -287,7 +287,7 @@ function RecipeForm() {
                  onChange={(e) => handleFieldChange(setSteps, 'steps', e.target.value)} // Ενημέρωση για καθαρισμό σφάλματος
                  disabled={loading}
                  helperText="Γράψτε κάθε βήμα σε νέα γραμμή."
-                 error={!!formErrors.steps} // Αν προσθέσεις validation για βήματα
+                 error={!!formErrors.steps} // Αν προστεθεί validation για βήματα
                  // helperText={formErrors.steps || "Γράψτε κάθε βήμα σε νέα γραμμή."}
                />
 

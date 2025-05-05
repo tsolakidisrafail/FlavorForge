@@ -23,6 +23,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useState } from 'react';
@@ -34,6 +35,7 @@ import LoginForm from './components/LoginForm';
 import UserProfile from './components/UserProfile';
 import ProtectedRoute from './components/ProtectedRoute';
 import RecipeEditForm from './components/RecipeEditForm';
+import MealPlanner from './components/MealPlanner';
 import './App.css';
 
 function App() {
@@ -82,6 +84,12 @@ function App() {
               <ListItemButton component={RouterLink} to="/add-recipe">
                 <ListItemIcon><AddCircleOutlineIcon /></ListItemIcon>
                 <ListItemText primary="Προσθήκη Συνταγής" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton component={RouterLink} to="/meal-planner">
+                <ListItemIcon><CalendarMonthIcon /></ListItemIcon>
+                <ListItemText primary="Πλάνο Γευμάτων" />
               </ListItemButton>
             </ListItem>
           </>
@@ -140,31 +148,41 @@ function App() {
           </Typography>
 
           {!isMobile && (
-            <Box>
-              {user && (
+        <Box>
+           {/* Πρόσθεσα ένα link για την Αρχική/Λίστα Συνταγών κι εδώ */}
+           <Button color="inherit" component={RouterLink} to="/">
+              Συνταγες
+           </Button>
+           {user && ( // Έλεγχος αν υπάρχει χρήστης
+             <> {/* Χρήση Fragment για ομαδοποίηση */}
+               <Button color="inherit" component={RouterLink} to="/add-recipe">
+                 Προσθηκη Συνταγης
+               </Button>
+                {/* ----------------------- */}
+               <Button color="inherit" component={RouterLink} to="/meal-planner">
+                 Πλανο Γευματων
+               </Button>
+               {/* ----------------------- */}
                 <Button color="inherit" component={RouterLink} to="/profile" sx={{ ml: 1 }}>
-                  Προφίλ ({user.name})
-                  </Button>
-              )}
-              <Button color="inherit" component={RouterLink} to="/add-recipe">
-                Προσθήκη Συνταγής
-              </Button>
-              {user ? (
-                <Button color="inherit" onClick={handleLogout}>
-                  Αποσύνδεση
-                </Button>
-              ) : (
-                <>
-                  <Button color="inherit" component={RouterLink} to="/register">
-                    Εγγραφή
-                  </Button>
-                  <Button color="inherit" component={RouterLink} to="/login">
-                    Σύνδεση
-                  </Button>
-                </>
-              )}
-            </Box>
-  )}
+                  Προφιλ ({user.name}) {/* Μετακίνηση πιο κοντά στην αποσύνδεση */}
+               </Button>
+               <Button color="inherit" onClick={handleLogout}>
+                 Αποσυνδεση
+               </Button>
+             </>
+           )}
+           {!user && ( // Αν δεν υπάρχει χρήστης
+             <>
+               <Button color="inherit" component={RouterLink} to="/register">
+                 Εγγραφη
+               </Button>
+               <Button color="inherit" component={RouterLink} to="/login">
+                 Συνδεση
+               </Button>
+             </>
+           )}
+        </Box>
+      )}
         </Toolbar>
       </AppBar>
 
@@ -181,6 +199,7 @@ function App() {
           <Route path="/" element={<RecipeList />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/login" element={<LoginForm />} />
+          <Route path='/meal-planner' element={<ProtectedRoute><MealPlanner /></ProtectedRoute>} />
           <Route path="/recipes/:id" element={<RecipeDetail />} />
           <Route path="/add-recipe" element={<ProtectedRoute><RecipeForm /></ProtectedRoute>} />
           <Route path="/recipes/:id/edit" element={<ProtectedRoute><RecipeEditForm /></ProtectedRoute>} />

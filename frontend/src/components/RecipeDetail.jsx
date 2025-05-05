@@ -188,7 +188,7 @@ function RecipeDetail() {
 
 
       {/* Κουμπιά Επεξεργασίας/Διαγραφής */}
-      {isOwner && ( <Box sx={{ mb: 2 }}> <Button variant="outlined" onClick={handleEdit} sx={{ mr: 1 }}>Επεξεργασία</Button> <Button variant="contained" color="error" onClick={handleDelete}>Διαγραφή</Button> </Box> )}
+      {isOwner && ( <Box sx={{ mb: 2 }}> <Button variant="outlined" onClick={handleEdit} sx={{ mr: 1 }}>Επεξεργασια</Button> <Button variant="contained" color="error" onClick={handleDelete}>Διαγραφη</Button> </Box> )}
       <Divider sx={{ my: 2 }} />
 
       {/* --- ΕΝΗΜΕΡΩΜΕΝΗ ΛΙΣΤΑ ΣΥΣΤΑΤΙΚΩΝ --- */}

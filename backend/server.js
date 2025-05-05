@@ -1,6 +1,7 @@
 // backend/server.js
 const mongoose = require('mongoose');
 const express = require('express');
+const mealPlanRoutes = require('./routes/mealPlanRoutes'); // Import the meal plan routes
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/users', require('./routes/userRoutes')); // Mount the user routes
 app.use('/api/recipes', require('./routes/recipeRoutes')); // Mount the recipe routes
+app.use('/api/mealplans', mealPlanRoutes); // Mount the meal plan routes
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
