@@ -37,15 +37,14 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'User already exists with this email' });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt); // Hash the password
+        
 
         // 2. Create new user
         // Το password θα κρυπτογραφηθεί αυτόματα λόγω του middleware στο μοντέλο User
         const user = await User.create({
             name,
             email,
-            password: hashedPassword, // Χρησιμοποιούμε το κρυπτογραφημένο password
+            password: password, // Χρησιμοποιούμε το κρυπτογραφημένο password
             points: 0, // Αρχικοί πόντοι
             badges: [], // Αρχικά κενό array για τα badges
             level: 1 // Αρχικό επίπεδο
